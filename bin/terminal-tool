@@ -1,0 +1,73 @@
+#!/usr/bin/env node
+
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const electron = require('electron');
+
+// Get the path to the app directory
+const appDir = path.resolve(__dirname, '..');
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+
+// Handle CLI options
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+  Terminal Tool - A persistent bash session in an Electron UI
+
+  Usage:
+    terminal-tool [options]
+
+  Options:
+    --help, -h      Show this help message
+    --version, -v   Show version information
+  `);
+  process.exit(0);
+}
+
+if (args.includes('--version') || args.includes('-v')) {
+  // Read version from package.json
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(appDir, 'package.json'), 'utf8'));
+    console.log(`Terminal Tool v${packageJson.version}`);
+    process.exit(0);
+  } catch (error) {
+    console.error('Error reading version information:', error.message);
+    process.exit(1);
+  }
+}
+
+// Ensure the main.js file exists
+const mainJsPath = path.join(appDir, 'main.js');
+if (!fs.existsSync(mainJsPath)) {
+  console.error(`Error: Could not find main application file at ${mainJsPath}`);
+  process.exit(1);
+}
+
+// Launch the Electron app
+try {
+  const electronProcess = spawn(electron, [appDir], {
+    stdio: 'inherit'
+  });
+
+  electronProcess.on('close', (code) => {
+    process.exit(code);
+  });
+
+  // Handle termination signals
+  const handleSignal = (signal) => {
+    console.log(`Received ${signal}, terminating...`);
+    if (!electronProcess.killed) {
+      electronProcess.kill(signal);
+    }
+  };
+
+  process.on('SIGINT', () => handleSignal('SIGINT'));
+  process.on('SIGTERM', () => handleSignal('SIGTERM'));
+
+} catch (error) {
+  console.error('Error launching application:', error.message);
+  process.exit(1);
+}
+
