@@ -139,46 +139,46 @@ function setupIPC() {
     }
   });
 
-  // Handle SIGINT request from renderer
-  ipcMain.on('send-sigint', (event) => {
+  // Handle signal request from renderer
+  ipcMain.on('send-signal', (event, signal = 'SIGINT') => {
     if (bashProcess && !bashProcess.killed) {
       try {
-        console.log('Sending SIGINT to bash process');
+        console.log(`Sending ${signal} to bash process`);
 
-        // Send SIGINT to the bash process
-        const result = bashProcess.kill('SIGINT');
+        // Send the signal to the bash process
+        const result = bashProcess.kill(signal);
 
         // Notify renderer about the result
         if (mainWindow && !mainWindow.isDestroyed()) {
           if (result) {
             mainWindow.webContents.send('bash-output', {
               type: 'system',
-              data: '\n[System: SIGINT signal sent (Ctrl+C equivalent)]\n'
+              data: `\n[System: ${signal} signal sent to process]\n`
             });
           } else {
             mainWindow.webContents.send('bash-output', {
               type: 'system',
-              data: '\n[System Error: Failed to send SIGINT signal]\n'
+              data: `\n[System Error: Failed to send ${signal} signal]\n`
             });
           }
         }
       } catch (error) {
-        console.error('Error sending SIGINT to bash process:', error);
+        console.error(`Error sending ${signal} to bash process:`, error);
 
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('bash-output', {
             type: 'system',
-            data: `\n[System Error: Failed to send SIGINT - ${error.message}]\n`
+            data: `\n[System Error: Failed to send ${signal} - ${error.message}]\n`
           });
         }
       }
     } else {
-      console.error('Bash process not available to send SIGINT');
+      console.error(`Bash process not available to send ${signal}`);
 
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('bash-output', {
           type: 'system',
-          data: '\n[System: No active bash process to interrupt]\n'
+          data: '\n[System: No active bash process to send signal to]\n'
         });
 
         // Try to restart the bash process if it doesn't exist

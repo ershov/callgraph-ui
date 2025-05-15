@@ -14,10 +14,17 @@ contextBridge.exposeInMainWorld('bashTerminal', {
     return true;
   },
 
-  // Function to send SIGINT (Ctrl+C) to the bash process
-  sendInterrupt: () => {
-    // Send the SIGINT request to the main process
-    ipcRenderer.send('send-sigint');
+  // Function to send a signal to the bash process
+  sendSignal: (signal = 'SIGINT') => {
+    // Validate signal type
+    if (!['SIGINT', 'SIGTERM'].includes(signal)) {
+      console.error('Invalid signal type:', signal);
+      console.error('Supported signals are: SIGINT, SIGTERM');
+      return false;
+    }
+
+    // Send the signal request to the main process
+    ipcRenderer.send('send-signal', signal);
     return true;
   },
 

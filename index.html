@@ -129,6 +129,50 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
+        
+        .terminate-btn {
+            background-color: #9b2c2c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-left: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .terminate-btn:hover {
+            background-color: #7c1e1e;
+        }
+        
+        .terminate-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        /* Tooltip styles */
+        [data-tooltip] {
+            position: relative;
+        }
+        
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
 
         .status {
             font-size: 12px;
@@ -164,8 +208,9 @@
                 ></textarea>
                 <div class="form-controls">
                     <div>
-                        <button type="submit" id="submit-btn" class="submit-btn">Execute Command</button>
-                        <button type="button" id="interrupt-btn" class="interrupt-btn">Interrupt (Ctrl+C)</button>
+                        <button type="submit" id="submit-btn" class="submit-btn" data-tooltip="Send command to bash">Execute Command</button>
+                        <button type="button" id="interrupt-btn" class="interrupt-btn" data-tooltip="Send SIGINT (Ctrl+C) - Interrupt current process">Interrupt</button>
+                        <button type="button" id="terminate-btn" class="terminate-btn" data-tooltip="Send SIGTERM - Terminate current process">Terminate</button>
                     </div>
                     <span id="status" class="status">Ready</span>
                 </div>

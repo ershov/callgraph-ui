@@ -4,6 +4,7 @@ const commandForm = document.getElementById('command-form');
 const commandInput = document.getElementById('command-input');
 const submitButton = document.getElementById('submit-btn');
 const interruptButton = document.getElementById('interrupt-btn');
+const terminateButton = document.getElementById('terminate-btn');
 const statusElement = document.getElementById('status');
 
 // Command history functionality
@@ -23,8 +24,9 @@ function initializeTerminal() {
   // Add keyboard shortcuts
   commandInput.addEventListener('keydown', handleKeyDown);
 
-  // Set up interrupt button
-  interruptButton.addEventListener('click', handleInterrupt);
+  // Set up signal buttons
+  interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
+  terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
 
   // Focus the input field
   commandInput.focus();
@@ -122,10 +124,17 @@ function handleKeyDown(event) {
     commandInput.selectionStart = commandInput.selectionEnd = start + 2;
   }
 
-  // Ctrl+C to interrupt running process
+  // Ctrl+C to interrupt running process (SIGINT)
   if (event.key === 'c' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault();
-    handleInterrupt();
+    handleSignal('SIGINT');
+    return;
+  }
+
+  // Ctrl+T to terminate process (SIGTERM)
+  if (event.key === 't' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    handleSignal('SIGTERM');
     return;
   }
 }
@@ -197,39 +206,49 @@ function updateStatus(message, type = '') {
   }
 }
 
-// Handle interrupt button click (SIGINT / Ctrl+C)
-function handleInterrupt() {
+// Handle signal button clicks (SIGINT / SIGTERM)
+function handleSignal(signalType) {
   try {
+    // Get the button for the current signal type
+    const signalButton = signalType === 'SIGINT' ? interruptButton : terminateButton;
+
     // Temporarily disable buttons to prevent multiple signals
     interruptButton.disabled = true;
+    terminateButton.disabled = true;
 
-    // Send interrupt signal
-    const success = window.bashTerminal.sendInterrupt();
+    // Send the signal
+    const success = window.bashTerminal.sendSignal(signalType);
+
+    // Format friendly names for UI messages
+    const signalName = signalType === 'SIGINT' ? 'Interrupt' : 'Terminate';
+    const shortcutHint = signalType === 'SIGINT' ? '(Ctrl+C)' : '(Ctrl+T)';
 
     if (success) {
       // Visual feedback
-      updateStatus('Interrupt signal sent (Ctrl+C)', 'success');
+      updateStatus(`${signalName} signal sent ${shortcutHint}`, 'success');
 
       // Add visual feedback in the terminal output
       appendOutput({
         type: 'system',
-        data: '\n[System: Interrupt signal (Ctrl+C) sent to bash process]\n'
+        data: `\n[System: ${signalName} signal (${signalType}) sent to bash process]\n`
       });
     } else {
-      updateStatus('Failed to send interrupt signal', 'error');
+      updateStatus(`Failed to send ${signalName.toLowerCase()} signal`, 'error');
     }
 
-    // Re-enable the button after a short delay
+    // Re-enable the buttons after a short delay
     setTimeout(() => {
       interruptButton.disabled = false;
+      terminateButton.disabled = false;
 
       // Focus back on input
       commandInput.focus();
     }, 500);
   } catch (error) {
-    console.error('Error sending interrupt:', error);
+    console.error(`Error sending ${signalType}:`, error);
     updateStatus('Error: ' + error.message, 'error');
     interruptButton.disabled = false;
+    terminateButton.disabled = false;
   }
 }
 
