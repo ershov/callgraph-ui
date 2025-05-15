@@ -26,9 +26,28 @@ function createWindow() {
   // Open DevTools for debugging (optional, remove in production)
   // mainWindow.webContents.openDevTools();
 
-  // Clean up the window reference when it's closed
+  // Clean up resources and quit when window is closed
   mainWindow.on('closed', () => {
+    // Clean up bash process
+    if (bashProcess && !bashProcess.killed) {
+      try {
+        // Attempt graceful termination
+        bashProcess.stdin.end();
+
+        // Force kill if necessary
+        if (!bashProcess.killed) {
+          bashProcess.kill();
+        }
+      } catch (error) {
+        console.error('Error killing bash process during window close:', error);
+      }
+      bashProcess = null;
+    }
+
     mainWindow = null;
+
+    // Quit the app
+    app.quit();
   });
 }
 
@@ -209,11 +228,9 @@ app.whenReady().then(() => {
   });
 });
 
-// Quit app when all windows are closed (except on macOS)
+// Quit app when all windows are closed
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  app.quit();
 });
 
 // Clean up bash process on app quit
