@@ -1,5 +1,5 @@
 {
-  "name": "simple",
+  "name": "callgraph-ui",
   "version": "1.0.0",
   "main": "main.js",
   "bin": {
@@ -8,13 +8,30 @@
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "chmod +x ./bin/callgraph-ui"
+    "postinstall": "chmod +x ./bin/callgraph-ui",
+    "package": "electron-builder --dir",
+    "dist": "electron-builder"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "callgraph",
+    "visualization",
+    "code-analysis",
+    "terminal",
+    "electron",
+    "ui"
+  ],
+  "author": "Y. Ershov",
+  "license": "GPL",
+  "description": "An interactive UI for visualizing call graph for WiredTiger",
   "devDependencies": {
-    "electron": "^36.2.0"
+    "electron": "^36.2.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.callgraph.ui",
+    "productName": "Callgraph UI",
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    }
   }
 }
