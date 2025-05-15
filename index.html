@@ -107,6 +107,29 @@
             cursor: not-allowed;
         }
 
+        .interrupt-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-left: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .interrupt-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .interrupt-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
         .status {
             font-size: 12px;
             color: #666;
@@ -140,7 +163,10 @@
                     autofocus
                 ></textarea>
                 <div class="form-controls">
-                    <button type="submit" id="submit-btn" class="submit-btn">Execute Command</button>
+                    <div>
+                        <button type="submit" id="submit-btn" class="submit-btn">Execute Command</button>
+                        <button type="button" id="interrupt-btn" class="interrupt-btn">Interrupt (Ctrl+C)</button>
+                    </div>
                     <span id="status" class="status">Ready</span>
                 </div>
             </form>

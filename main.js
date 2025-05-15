@@ -138,6 +138,56 @@ function setupIPC() {
       }
     }
   });
+
+  // Handle SIGINT request from renderer
+  ipcMain.on('send-sigint', (event) => {
+    if (bashProcess && !bashProcess.killed) {
+      try {
+        console.log('Sending SIGINT to bash process');
+
+        // Send SIGINT to the bash process
+        const result = bashProcess.kill('SIGINT');
+
+        // Notify renderer about the result
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (result) {
+            mainWindow.webContents.send('bash-output', {
+              type: 'system',
+              data: '\n[System: SIGINT signal sent (Ctrl+C equivalent)]\n'
+            });
+          } else {
+            mainWindow.webContents.send('bash-output', {
+              type: 'system',
+              data: '\n[System Error: Failed to send SIGINT signal]\n'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error sending SIGINT to bash process:', error);
+
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('bash-output', {
+            type: 'system',
+            data: `\n[System Error: Failed to send SIGINT - ${error.message}]\n`
+          });
+        }
+      }
+    } else {
+      console.error('Bash process not available to send SIGINT');
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('bash-output', {
+          type: 'system',
+          data: '\n[System: No active bash process to interrupt]\n'
+        });
+
+        // Try to restart the bash process if it doesn't exist
+        if (!bashProcess && !app.isQuitting) {
+          initBashProcess();
+        }
+      }
+    }
+  });
 }
 
 // Set app.isQuitting flag when quitting to prevent process restart
