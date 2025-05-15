@@ -13,7 +13,7 @@ function createWindow() {
     height: 600,
     webPreferences: {
       // Security settings
-      nodeIntegration: false,
+      nodeIntegration: true,
       contextIsolation: true,
       sandbox: true,
       preload: path.join(__dirname, 'preload.js')
@@ -22,7 +22,7 @@ function createWindow() {
 
   // Load the HTML file
   mainWindow.loadFile('index.html');
-  
+
   // Open DevTools for debugging (optional, remove in production)
   // mainWindow.webContents.openDevTools();
 
@@ -65,12 +65,12 @@ function initBashProcess() {
     // Handle process exit
     bashProcess.on('exit', (code, signal) => {
       console.log(`Bash process exited with code ${code} and signal ${signal}`);
-      
+
       // Restart bash process if it crashes unexpectedly
       if (mainWindow && !mainWindow.isDestroyed() && !app.isQuitting) {
         console.log('Restarting bash process...');
         initBashProcess();
-        
+
         mainWindow.webContents.send('bash-output', {
           type: 'system',
           data: `\n[System: Bash process restarted after exiting with code ${code}]\n`
@@ -81,7 +81,7 @@ function initBashProcess() {
     // Handle process errors
     bashProcess.on('error', (error) => {
       console.error('Failed to start bash process:', error);
-      
+
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('bash-output', {
           type: 'system',
@@ -91,7 +91,7 @@ function initBashProcess() {
     });
 
     console.log('Bash process initialized');
-    
+
     // Initial welcome message
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('bash-output', {
@@ -114,7 +114,7 @@ function setupIPC() {
         bashProcess.stdin.write(command + '\n');
       } catch (error) {
         console.error('Error writing to bash stdin:', error);
-        
+
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('bash-output', {
             type: 'system',
@@ -124,12 +124,12 @@ function setupIPC() {
       }
     } else {
       console.error('Bash process not available or stdin not writable');
-      
+
       // Try to restart the bash process
       if (!bashProcess && !app.isQuitting) {
         initBashProcess();
       }
-      
+
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('bash-output', {
           type: 'system',
@@ -172,7 +172,7 @@ app.on('quit', () => {
     try {
       // Attempt graceful termination first
       bashProcess.stdin.end();
-      
+
       // Force kill if still running
       if (!bashProcess.killed) {
         bashProcess.kill();
