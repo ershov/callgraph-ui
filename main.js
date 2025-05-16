@@ -6,6 +6,25 @@ const { spawn } = require('child_process');
 let mainWindow = null;
 let callgraphProcess = null;
 
+// Helper function to kill the callgraph process
+function killCallgraphProcess() {
+  app.isQuitting = true;
+  if (callgraphProcess && callgraphProcess.exitCode === null) {
+    try {
+      // Attempt graceful termination
+      callgraphProcess.stdin.end();
+
+      // Force kill if still running
+      if (callgraphProcess.exitCode === null) {
+        callgraphProcess.kill();
+      }
+    } catch (error) {
+      console.error('Error killing callgraph process:', error);
+    }
+    callgraphProcess = null;
+  }
+}
+
 // Create the main browser window
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -29,20 +48,7 @@ function createWindow() {
   // Clean up resources and quit when window is closed
   mainWindow.on('closed', () => {
     // Clean up callgraph process
-    if (callgraphProcess && callgraphProcess.exitCode === null) {
-      try {
-        // Attempt graceful termination
-        callgraphProcess.stdin.end();
-
-        // Force kill if necessary
-        if (callgraphProcess.exitCode === null) {
-          callgraphProcess.kill();
-        }
-      } catch (error) {
-        console.error('Error killing callgraph process during window close:', error);
-      }
-      callgraphProcess = null;
-    }
+    killCallgraphProcess();
 
     mainWindow = null;
 
@@ -209,8 +215,24 @@ function setupIPC() {
   });
 }
 
-// Set app.isQuitting flag when quitting to prevent process restart
-app.on('before-quit', () => app.isQuitting = true);
+// Handle termination signals (SIGINT, SIGTERM)
+const handleTerminationSignal = (signal) => {
+  console.log(`Received ${signal} signal. Shutting down...`);
+
+  killCallgraphProcess();
+
+  app.quit();
+
+  // Force exit after a short timeout if app.quit() doesn't exit cleanly
+  //setTimeout(() => {
+  //  console.log('Forcing exit after timeout');
+  //  process.exit(0);
+  //}, 1000);
+};
+
+// Add signal handlers
+process.on('SIGINT', () => handleTerminationSignal('SIGINT'));
+process.on('SIGTERM', () => handleTerminationSignal('SIGTERM'));
 
 // Initialize app when Electron is ready
 app.whenReady().then(() => {
@@ -226,26 +248,7 @@ app.whenReady().then(() => {
   });
 });
 
-// Quit app when all windows are closed
 app.on('window-all-closed', () => app.quit());
-// process.on('SIGINT', () => app.quit());
-// process.on('SIGTERM', () => app.quit());
-
-// Clean up callgraph process on app quit
-app.on('quit', () => {
-  app.isQuitting = true;
-  if (callgraphProcess) {
-    try {
-      // Attempt graceful termination first
-      callgraphProcess.stdin.end();
-
-      // Force kill if still running
-      if (callgraphProcess.exitCode === null) {
-        callgraphProcess.kill();
-      }
-    } catch (error) {
-      console.error('Error killing callgraph process:', error);
-    }
-  }
-});
+app.on('before-quit', () => killCallgraphProcess());
+app.on('quit', () => killCallgraphProcess());
 
