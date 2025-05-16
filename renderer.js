@@ -5,16 +5,32 @@ const commandInput = document.getElementById('command-input');
 const submitButton = document.getElementById('submit-btn');
 const interruptButton = document.getElementById('interrupt-btn');
 const terminateButton = document.getElementById('terminate-btn');
-const statusElement = document.getElementById('status');
+const statusBar = document.getElementById('status-bar');
+const statusBarContent = document.getElementById('status-bar-content');
 
 // Command history functionality
 const commandHistory = [];
 let historyIndex = -1;
 
+// Status update detection regex
+const statusMessageRegex = /\x1b\[K([^\r\n]*)[\r\n]/sg;
+
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
   window.callgraphTerminal.onCallgraphOutput((output) => {
+    // Check if stderr contains status update format
+    if (output.type === 'stderr') {
+      updateStatusBar(output.data);
+      output.data = output.data.replaceAll(statusMessageRegex, (match, p1, offset, string, groups) => {
+        // console.log(match, p1, offset, string, groups);
+        updateStatusBar(p1);
+        return p1;
+      }).trim();
+      if (output.data === "") return;
+    }
+
+    // Regular output handling for non-status messages
     appendOutput(output);
   });
 
@@ -162,21 +178,9 @@ function appendCommandToOutput(command) {
 // Append output to the terminal
 function appendOutput(output) {
   const outputLine = document.createElement('div');
-
-  // Set appropriate class based on output type
-  if (output.type === 'stderr') {
-    outputLine.className = 'stderr';
-  } else if (output.type === 'system') {
-    outputLine.className = 'system';
-  }
-
-  // Set the text content
+  outputLine.className = output.type;
   outputLine.textContent = output.data;
-
-  // Append to output area
   outputElement.appendChild(outputLine);
-
-  // Scroll to bottom
   scrollToBottom();
 }
 
@@ -187,23 +191,12 @@ function scrollToBottom() {
 
 // Update status message
 function updateStatus(message, type = '') {
-  statusElement.textContent = message;
+  appendOutput({data: message, type});
+}
 
-  // Reset classes
-  statusElement.className = 'status';
-
-  // Add type class if specified
-  if (type) {
-    statusElement.classList.add(type);
-  }
-
-  // Clear status after a delay for success/error messages
-  if (type === 'success' || type === 'error') {
-    setTimeout(() => {
-      statusElement.textContent = 'Ready';
-      statusElement.className = 'status';
-    }, 3000);
-  }
+// Update status bar with new status message
+function updateStatusBar(message) {
+  statusBarContent.textContent = message;
 }
 
 // Handle signal button clicks (SIGINT / SIGTERM)
