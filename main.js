@@ -4,13 +4,13 @@ const { spawn } = require('child_process');
 
 // Keep a global reference of objects to prevent garbage collection
 let mainWindow = null;
-let bashProcess = null;
+let callgraphProcess = null;
 
 // Create the main browser window
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 900,
     webPreferences: {
       // Security settings
       nodeIntegration: true,
@@ -28,20 +28,20 @@ function createWindow() {
 
   // Clean up resources and quit when window is closed
   mainWindow.on('closed', () => {
-    // Clean up bash process
-    if (bashProcess && !bashProcess.killed) {
+    // Clean up callgraph process
+    if (callgraphProcess && callgraphProcess.exitCode === null) {
       try {
         // Attempt graceful termination
-        bashProcess.stdin.end();
+        callgraphProcess.stdin.end();
 
         // Force kill if necessary
-        if (!bashProcess.killed) {
-          bashProcess.kill();
+        if (callgraphProcess.exitCode === null) {
+          callgraphProcess.kill();
         }
       } catch (error) {
-        console.error('Error killing bash process during window close:', error);
+        console.error('Error killing callgraph process during window close:', error);
       }
-      bashProcess = null;
+      callgraphProcess = null;
     }
 
     mainWindow = null;
@@ -51,20 +51,20 @@ function createWindow() {
   });
 }
 
-// Initialize bash process
-function initBashProcess() {
+// Initialize callgraph process
+function initCallgraphProcess() {
   try {
-    // Spawn a persistent bash session
+    // Spawn a persistent callgraph session
     // Use login shell to ensure consistent environment
-    bashProcess = spawn('bash', ['-l'], {
+    callgraphProcess = spawn('callgraph', ['-server'], {
       shell: false, // Don't spawn within another shell
       env: process.env // Inherit current environment variables
     });
 
     // Handle stdout data
-    bashProcess.stdout.on('data', (data) => {
+    callgraphProcess.stdout.on('data', (data) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('bash-output', {
+        mainWindow.webContents.send('callgraph-output', {
           type: 'stdout',
           data: data.toString()
         });
@@ -72,9 +72,9 @@ function initBashProcess() {
     });
 
     // Handle stderr data
-    bashProcess.stderr.on('data', (data) => {
+    callgraphProcess.stderr.on('data', (data) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('bash-output', {
+        mainWindow.webContents.send('callgraph-output', {
           type: 'stderr',
           data: data.toString()
         });
@@ -82,44 +82,44 @@ function initBashProcess() {
     });
 
     // Handle process exit
-    bashProcess.on('exit', (code, signal) => {
-      console.log(`Bash process exited with code ${code} and signal ${signal}`);
+    callgraphProcess.on('exit', (code, signal) => {
+      console.log(`Callgraph process exited with code ${code} and signal ${signal}`);
 
-      // Restart bash process if it crashes unexpectedly
+      // Restart callgraph process if it crashes unexpectedly
       if (mainWindow && !mainWindow.isDestroyed() && !app.isQuitting) {
-        console.log('Restarting bash process...');
-        initBashProcess();
+        console.log('Restarting callgraph process...');
+        initCallgraphProcess();
 
-        mainWindow.webContents.send('bash-output', {
+        mainWindow.webContents.send('callgraph-output', {
           type: 'system',
-          data: `\n[System: Bash process restarted after exiting with code ${code}]\n`
+          data: `\n[System: Callgraph process restarted after exiting with code ${code}]\n`
         });
       }
     });
 
     // Handle process errors
-    bashProcess.on('error', (error) => {
-      console.error('Failed to start bash process:', error);
+    callgraphProcess.on('error', (error) => {
+      console.error('Failed to start callgraph process:', error);
 
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('bash-output', {
+        mainWindow.webContents.send('callgraph-output', {
           type: 'system',
           data: `\n[System Error: ${error.message}]\n`
         });
       }
     });
 
-    console.log('Bash process initialized');
+    console.log('Callgraph process initialized');
 
     // Initial welcome message
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('bash-output', {
+      mainWindow.webContents.send('callgraph-output', {
         type: 'system',
-        data: '[System: Bash session started]\n'
+        data: '[System: Callgraph session started]\n'
       });
     }
   } catch (error) {
-    console.error('Error initializing bash process:', error);
+    console.error('Error initializing callgraph process:', error);
   }
 }
 
@@ -127,32 +127,32 @@ function initBashProcess() {
 function setupIPC() {
   // Handle command input from renderer
   ipcMain.on('execute-command', (event, command) => {
-    if (bashProcess && bashProcess.stdin.writable) {
+    if (callgraphProcess && callgraphProcess.stdin.writable) {
       try {
-        // Write command to bash stdin with a newline
-        bashProcess.stdin.write(command + '\n');
+        // Write command to callgraph stdin with a newline
+        callgraphProcess.stdin.write(command + '\n');
       } catch (error) {
-        console.error('Error writing to bash stdin:', error);
+        console.error('Error writing to callgraph stdin:', error);
 
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('bash-output', {
+          mainWindow.webContents.send('callgraph-output', {
             type: 'system',
             data: `\n[System Error: Failed to send command - ${error.message}]\n`
           });
         }
       }
     } else {
-      console.error('Bash process not available or stdin not writable');
+      console.error('Callgraph process not available or stdin not writable');
 
-      // Try to restart the bash process
-      if (!bashProcess && !app.isQuitting) {
-        initBashProcess();
+      // Try to restart the callgraph process
+      if (!callgraphProcess && !app.isQuitting) {
+        initCallgraphProcess();
       }
 
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('bash-output', {
+        mainWindow.webContents.send('callgraph-output', {
           type: 'system',
-          data: '\n[System: Bash process unavailable, attempting restart...]\n'
+          data: '\n[System: Callgraph process unavailable, attempting restart...]\n'
         });
       }
     }
@@ -160,49 +160,49 @@ function setupIPC() {
 
   // Handle signal request from renderer
   ipcMain.on('send-signal', (event, signal = 'SIGINT') => {
-    if (bashProcess && !bashProcess.killed) {
+    if (callgraphProcess && callgraphProcess.exitCode === null) {
       try {
-        console.log(`Sending ${signal} to bash process`);
+        console.log(`Sending ${signal} to callgraph process`);
 
-        // Send the signal to the bash process
-        const result = bashProcess.kill(signal);
+        // Send the signal to the callgraph process
+        const result = callgraphProcess.kill(signal);
 
         // Notify renderer about the result
         if (mainWindow && !mainWindow.isDestroyed()) {
           if (result) {
-            mainWindow.webContents.send('bash-output', {
+            mainWindow.webContents.send('callgraph-output', {
               type: 'system',
               data: `\n[System: ${signal} signal sent to process]\n`
             });
           } else {
-            mainWindow.webContents.send('bash-output', {
+            mainWindow.webContents.send('callgraph-output', {
               type: 'system',
               data: `\n[System Error: Failed to send ${signal} signal]\n`
             });
           }
         }
       } catch (error) {
-        console.error(`Error sending ${signal} to bash process:`, error);
+        console.error(`Error sending ${signal} to callgraph process:`, error);
 
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('bash-output', {
+          mainWindow.webContents.send('callgraph-output', {
             type: 'system',
             data: `\n[System Error: Failed to send ${signal} - ${error.message}]\n`
           });
         }
       }
     } else {
-      console.error(`Bash process not available to send ${signal}`);
+      console.error(`Callgraph process not available to send ${signal}`);
 
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('bash-output', {
+        mainWindow.webContents.send('callgraph-output', {
           type: 'system',
-          data: '\n[System: No active bash process to send signal to]\n'
+          data: '\n[System: No active callgraph process to send signal to]\n'
         });
 
-        // Try to restart the bash process if it doesn't exist
-        if (!bashProcess && !app.isQuitting) {
-          initBashProcess();
+        // Try to restart the callgraph process if it doesn't exist
+        if (!callgraphProcess && !app.isQuitting) {
+          initCallgraphProcess();
         }
       }
     }
@@ -217,7 +217,7 @@ app.on('before-quit', () => {
 // Initialize app when Electron is ready
 app.whenReady().then(() => {
   createWindow();
-  initBashProcess();
+  initCallgraphProcess();
   setupIPC();
 
   // Re-create window on macOS when dock icon is clicked and no windows are open
@@ -233,19 +233,19 @@ app.on('window-all-closed', () => {
   app.quit();
 });
 
-// Clean up bash process on app quit
+// Clean up callgraph process on app quit
 app.on('quit', () => {
-  if (bashProcess) {
+  if (callgraphProcess) {
     try {
       // Attempt graceful termination first
-      bashProcess.stdin.end();
+      callgraphProcess.stdin.end();
 
       // Force kill if still running
-      if (!bashProcess.killed) {
-        bashProcess.kill();
+      if (callgraphProcess.exitCode === null) {
+        callgraphProcess.kill();
       }
     } catch (error) {
-      console.error('Error killing bash process:', error);
+      console.error('Error killing callgraph process:', error);
     }
   }
 });

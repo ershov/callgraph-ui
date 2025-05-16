@@ -14,7 +14,7 @@ let historyIndex = -1;
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
-  window.bashTerminal.onBashOutput((output) => {
+  window.callgraphTerminal.onCallgraphOutput((output) => {
     appendOutput(output);
   });
 
@@ -55,7 +55,7 @@ function handleCommandSubmit(event) {
 
   // Send command to main process
   try {
-    const success = window.bashTerminal.executeCommand(command);
+    const success = window.callgraphTerminal.executeCommand(command);
     if (success) {
       // Clear input and update status
       commandInput.value = '';
@@ -217,7 +217,7 @@ function handleSignal(signalType) {
     terminateButton.disabled = true;
 
     // Send the signal
-    const success = window.bashTerminal.sendSignal(signalType);
+    const success = window.callgraphTerminal.sendSignal(signalType);
 
     // Format friendly names for UI messages
     const signalName = signalType === 'SIGINT' ? 'Interrupt' : 'Terminate';
@@ -230,7 +230,7 @@ function handleSignal(signalType) {
       // Add visual feedback in the terminal output
       appendOutput({
         type: 'system',
-        data: `\n[System: ${signalName} signal (${signalType}) sent to bash process]\n`
+        data: `\n[System: ${signalName} signal (${signalType}) sent to callgraph process]\n`
       });
     } else {
       updateStatus(`Failed to send ${signalName.toLowerCase()} signal`, 'error');

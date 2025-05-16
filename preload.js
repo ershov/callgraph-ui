@@ -1,8 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 // Expose a limited set of functionality to the renderer process
-contextBridge.exposeInMainWorld('bashTerminal', {
-  // Function to send a command to the bash process
+contextBridge.exposeInMainWorld('callgraphTerminal', {
+  // Function to send a command to the callgraph process
   executeCommand: (command) => {
     if (typeof command !== 'string') {
       console.error('Invalid command format: Command must be a string');
@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('bashTerminal', {
     return true;
   },
 
-  // Function to send a signal to the bash process
+  // Function to send a signal to the callgraph process
   sendSignal: (signal = 'SIGINT') => {
     // Validate signal type
     if (!['SIGINT', 'SIGTERM'].includes(signal)) {
@@ -28,15 +28,15 @@ contextBridge.exposeInMainWorld('bashTerminal', {
     return true;
   },
 
-  // Function to register a callback for receiving bash output
-  onBashOutput: (callback) => {
+  // Function to register a callback for receiving callgraph output
+  onCallgraphOutput: (callback) => {
     // Ensure callback is a function
     if (typeof callback !== 'function') {
       console.error('Invalid callback: Must be a function');
       return false;
     }
 
-    // Create a listener for bash output events
+    // Create a listener for callgraph output events
     const outputListener = (event, output) => {
       // Validate the output structure before passing to callback
       if (
@@ -52,14 +52,14 @@ contextBridge.exposeInMainWorld('bashTerminal', {
     };
 
     // Remove any existing listeners to prevent duplicates
-    ipcRenderer.removeAllListeners('bash-output');
+    ipcRenderer.removeAllListeners('callgraph-output');
 
     // Register the new listener
-    ipcRenderer.on('bash-output', outputListener);
+    ipcRenderer.on('callgraph-output', outputListener);
 
     // Return function to remove the listener when no longer needed
     return () => {
-      ipcRenderer.removeListener('bash-output', outputListener);
+      ipcRenderer.removeListener('callgraph-output', outputListener);
     };
   }
 });

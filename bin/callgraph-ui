@@ -14,10 +14,10 @@ const args = process.argv.slice(2);
 // Handle CLI options
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`
-  Terminal Tool - A persistent bash session in an Electron UI
+  Callgraph-ui - GUI fromntend for callgraph
 
   Usage:
-    terminal-tool [options]
+    callgraph-ui [options]
 
   Options:
     --help, -h      Show this help message
@@ -30,7 +30,7 @@ if (args.includes('--version') || args.includes('-v')) {
   // Read version from package.json
   try {
     const packageJson = JSON.parse(fs.readFileSync(path.join(appDir, 'package.json'), 'utf8'));
-    console.log(`Terminal Tool v${packageJson.version}`);
+    console.log(`callgraph-ui v${packageJson.version}`);
     process.exit(0);
   } catch (error) {
     console.error('Error reading version information:', error.message);
@@ -58,7 +58,7 @@ try {
   // Handle termination signals
   const handleSignal = (signal) => {
     console.log(`Received ${signal}, terminating...`);
-    if (!electronProcess.killed) {
+    if (electronProcess.exitCode === null) {
       electronProcess.kill(signal);
     }
   };

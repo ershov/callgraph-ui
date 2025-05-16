@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bash Terminal</title>
+    <title>Callgraph</title>
     <style>
         body {
             font-family: 'Menlo', monospace;
@@ -129,7 +129,7 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
-        
+
         .terminate-btn {
             background-color: #9b2c2c;
             color: white;
@@ -143,21 +143,21 @@
             margin-left: 10px;
             transition: background-color 0.3s;
         }
-        
+
         .terminate-btn:hover {
             background-color: #7c1e1e;
         }
-        
+
         .terminate-btn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
         }
-        
+
         /* Tooltip styles */
         [data-tooltip] {
             position: relative;
         }
-        
+
         [data-tooltip]:hover::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -195,7 +195,7 @@
     </style>
 </head>
 <body>
-    <h1>Bash Terminal</h1>
+    <h1>Callgraph</h1>
     <div class="terminal-container">
         <div id="output" class="output-area"></div>
         <div class="input-area">
@@ -203,12 +203,12 @@
                 <textarea
                     id="command-input"
                     class="command-textarea"
-                    placeholder="Enter bash command here..."
+                    placeholder="Enter callgraph command here..."
                     autofocus
                 ></textarea>
                 <div class="form-controls">
                     <div>
-                        <button type="submit" id="submit-btn" class="submit-btn" data-tooltip="Send command to bash">Execute Command</button>
+                        <button type="submit" id="submit-btn" class="submit-btn" data-tooltip="Send command to callgraph">Execute Command</button>
                         <button type="button" id="interrupt-btn" class="interrupt-btn" data-tooltip="Send SIGINT (Ctrl+C) - Interrupt current process">Interrupt</button>
                         <button type="button" id="terminate-btn" class="terminate-btn" data-tooltip="Send SIGTERM - Terminate current process">Terminate</button>
                     </div>
