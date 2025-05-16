@@ -66,7 +66,7 @@ function initializeTerminal() {
   terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
 
   // Disable the submit button button initially
-  submitButton.disabled = true;
+  // submitButton.disabled = true;
 
   // Focus the input field
   commandInput.focus();
