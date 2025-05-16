@@ -72,7 +72,7 @@ function initCallgraphProcess() {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('callgraph-output', {
           type: 'stdout',
-          data: data.toString()
+          data: data, // Buffer as Uint8Array
         });
       }
     });
@@ -82,7 +82,7 @@ function initCallgraphProcess() {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('callgraph-output', {
           type: 'stderr',
-          data: data.toString()
+          data: data, // Buffer as Uint8Array
         });
       }
     });

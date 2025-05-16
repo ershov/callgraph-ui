@@ -43,7 +43,7 @@ contextBridge.exposeInMainWorld('callgraphTerminal', {
         output &&
         typeof output === 'object' &&
         ['stdout', 'stderr', 'system'].includes(output.type) &&
-        typeof output.data === 'string'
+        (typeof output.data === 'string' || Buffer.isBuffer(output.data) || Uint8Array.prototype.isPrototypeOf(output.data))
       ) {
         callback(output);
       } else {

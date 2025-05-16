@@ -21,11 +21,16 @@ let commandOutputCapture = '';
 // Global tab counter for unique IDs
 let tabIdCounter = 0;
 
+function Uint8Array_to_String(uint8Array) {
+  return String.fromCharCode.apply(null, uint8Array);
+}
+
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
   window.callgraphTerminal.onCallgraphOutput((output) => {
-    // hex dump string
+    if (Uint8Array.prototype.isPrototypeOf(output.data))
+      output.data = Uint8Array_to_String(output.data);
     // Check if stderr contains status update format
     if (output.type === 'stderr') {
       output.data = output.data.replaceAll(statusMessageRegex, (match, p1, offset, string, groups) => {
@@ -120,8 +125,10 @@ function onServerCommandEnd(message) {
 
 // Detect the type of content based on its structure/headers
 function detectContentType(content) {
+  // console.log(content.substr(0,16));
+  // console.log(content.substr(0,16).split("").map(x => x.charCodeAt(0).toString(16).padStart(2, "0")).join(" "));
   // Check for PNG (starts with PNG signature)
-  if (content.startsWith('\x89PNG\r\n\x1a\n')) {
+  if (content.startsWith('PNG\r\n\x1a\n', 1)) {
     return 'PNG';
   }
 
