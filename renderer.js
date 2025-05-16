@@ -16,6 +16,8 @@ let historyIndex = -1;
 const statusMessageRegex = /\x1b\[K([^\r\n]*)[\r\n]/sg;
 const serverStatusMessageRegex = /\n<<<<<<<<<< (.*?) >>>>>>>>>>\n/sg;
 
+let commandOutputCapture = '';
+
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
@@ -23,19 +25,21 @@ function initializeTerminal() {
     // hex dump string
     // Check if stderr contains status update format
     if (output.type === 'stderr') {
-      updateStatusBar(output.data);
       output.data = output.data.replaceAll(statusMessageRegex, (match, p1, offset, string, groups) => {
         // console.log(match, p1, offset, string, groups);
         updateStatusBar(p1);
         return p1;
       }).trim();
       if (output.data === "") return;
+      updateStatusBar(output.data);
     } else if (output.type === 'stdout') {
       // console.log(output.data.split("").map(x => x.charCodeAt(0).toString(16).padStart(2, "0")).join(" "));
       output.data = output.data.replaceAll(serverStatusMessageRegex, (match, p1, offset, string, groups) => {
-        return onServerStatusMessage(p1);
+        onServerStatusMessage(p1);
+        return "";
       }).trim();
       if (output.data === "") return;
+      commandOutputCapture += output.data;
     }
 
     // Regular output handling for non-status messages
@@ -52,14 +56,66 @@ function initializeTerminal() {
   interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
   terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
 
+  // Disable the submit button button initially
+  submitButton.disabled = true;
+
   // Focus the input field
   commandInput.focus();
 }
 
 function onServerStatusMessage(message) {
   console.log(message);
-  updateStatusBar("");
-  return "";
+  if (message.startsWith("Server start"))        { onServerStart(message);      onServerReady(message);
+  } else if (message.startsWith("Server error")) { onServerReady(message);
+  } else if (message.startsWith("Server end"))   { onServerBusy(message);
+  } else if (message.startsWith("Task start"))   { onServerBusy(message);       onServerCommandStart(message);
+  } else if (message.startsWith("Task end"))     { onServerCommandEnd(message); onServerReady(message);
+  }
+}
+
+function onServerStart(message) {
+  appendOutput({
+    type: 'system',
+    data: `[Server started: ${message}]\n`
+  });
+  updateStatusBar("Ready");
+}
+
+function onServerReady(message) {
+  appendOutput({
+    type: 'system',
+    data: `[Server ready: ${message}]\n`
+  });
+  submitButton.disabled = false;
+}
+
+function onServerBusy(message) {
+  appendOutput({
+    type: 'system',
+    data: `[Server busy: ${message}]\n`
+  });
+  submitButton.disabled = true;
+}
+
+function onServerCommandStart(message) {
+  appendOutput({
+    type: 'system',
+    data: `[Server command start: ${message}]\n`
+  });
+  commandOutputCapture = "";
+}
+
+function onServerCommandEnd(message) {
+  appendOutput({
+    type: 'system',
+    data: `[Server command end: ${message}]\n`
+  });
+  onCommandOutputCapture(commandOutputCapture);
+  commandOutputCapture = "";
+}
+
+function onCommandOutputCapture(output) {
+  console.log("Command output capture:", output);
 }
 
 // Handle form submission
@@ -210,7 +266,7 @@ function updateStatus(message, type = '') {
 
 // Update status bar with new status message
 function updateStatusBar(message) {
-  statusBarContent.textContent = message;
+  if (message !== "") statusBarContent.textContent = message;
 }
 
 // Handle signal button clicks (SIGINT / SIGTERM)
