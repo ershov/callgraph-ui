@@ -18,6 +18,9 @@ const serverStatusMessageRegex = /\n<<<<<<<<<< (.*?) >>>>>>>>>>\n/sg;
 
 let commandOutputCapture = '';
 
+// Global tab counter for unique IDs
+let tabIdCounter = 0;
+
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
@@ -116,6 +119,86 @@ function onServerCommandEnd(message) {
 
 function onCommandOutputCapture(output) {
   console.log("Command output capture:", output);
+  if (output.trim()) {
+    // Get the number of existing output tabs (excluding terminal tab)
+    const outputTabCount = document.querySelectorAll('.tab-radio').length - 1;
+    createNewTab(output, `Output ${outputTabCount + 1}`);
+  }
+}
+
+// Create a new tab with the given output and title
+function createNewTab(output, title) {
+  // Increment the global ID counter for unique IDs
+  tabIdCounter++;
+
+  // Create tab elements with unique IDs
+  const tabId = `tab-${tabIdCounter}`;
+
+  // Create radio button
+  const radio = document.createElement('input');
+  radio.type = 'radio';
+  radio.name = 'tabs';
+  radio.id = tabId;
+  radio.className = 'tab-radio';
+
+  // Create label with close button
+  const label = document.createElement('label');
+  label.htmlFor = tabId;
+  label.className = 'tab-label';
+
+  // Add title span
+  const titleSpan = document.createElement('span');
+  titleSpan.textContent = title;
+  label.appendChild(titleSpan);
+
+  // Add close button
+  const closeButton = document.createElement('span');
+  closeButton.className = 'tab-close';
+  closeButton.innerHTML = '×';
+  closeButton.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeTab(tabId);
+  };
+  label.appendChild(closeButton);
+
+  // Create panel
+  const panel = document.createElement('div');
+  panel.className = 'tab-panel';
+  panel.id = `panel-${tabId}`;
+
+  // Create output container
+  const outputDiv = document.createElement('div');
+  outputDiv.className = 'captured-output';
+  outputDiv.textContent = output;
+
+  panel.appendChild(outputDiv);
+
+  // Add to DOM
+  const controls = document.getElementById('tab-controls');
+  controls.appendChild(radio);
+  controls.appendChild(label);
+  controls.appendChild(panel);
+
+  // Switch to new tab
+  radio.checked = true;
+}
+
+// Close a tab and remove its elements
+function closeTab(tabId) {
+  const radio = document.getElementById(tabId);
+  const label = radio.nextElementSibling;
+  const panel = label.nextElementSibling;
+
+  // If this tab is active, switch to terminal tab
+  if (radio.checked) {
+    document.getElementById('tab-terminal').checked = true;
+  }
+
+  // Remove tab elements
+  radio.remove();
+  label.remove();
+  panel.remove();
 }
 
 // Handle form submission
