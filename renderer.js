@@ -30,7 +30,7 @@ function initializeTerminal() {
     if (output.type === 'stderr') {
       output.data = output.data.replaceAll(statusMessageRegex, (match, p1, offset, string, groups) => {
         // console.log(match, p1, offset, string, groups);
-        updateStatusBar(p1);
+        updateStatusBar(p1, true);
         return p1;
       }).trim();
       if (output.data === "") return;
@@ -43,6 +43,7 @@ function initializeTerminal() {
       }).trim();
       if (output.data === "") return;
       commandOutputCapture += output.data;
+      return;
     }
 
     // Regular output handling for non-status messages
@@ -118,11 +119,11 @@ function onServerCommandEnd(message) {
 }
 
 function onCommandOutputCapture(output) {
-  console.log("Command output capture:", output);
+  // console.log("Command output capture:", output);
   if (output.trim()) {
     // Get the number of existing output tabs (excluding terminal tab)
-    const outputTabCount = document.querySelectorAll('.tab-radio').length - 1;
-    createNewTab(output, `Output ${outputTabCount + 1}`);
+    // const outputTabCount = document.querySelectorAll('.tab-radio').length - 1;
+    createNewTab(output, `Out ${tabIdCounter + 1}`);
   }
 }
 
@@ -228,7 +229,7 @@ function handleCommandSubmit(event) {
     if (success) {
       // Clear input and update status
       commandInput.value = '';
-      updateStatus('Command sent', 'success');
+      updateStatusBar('Command sent');
     } else {
       updateStatus('Failed to send command', 'error');
     }
@@ -277,35 +278,21 @@ function handleKeyDown(event) {
     return;
   }
 
-  // Tab key indentation
-  if (event.key === 'Tab') {
-    event.preventDefault();
+  // // Tab key indentation
+  // if (event.key === 'Tab') {
+  //   event.preventDefault();
 
-    const start = commandInput.selectionStart;
-    const end = commandInput.selectionEnd;
+  //   const start = commandInput.selectionStart;
+  //   const end = commandInput.selectionEnd;
 
-    // Insert tab at cursor position
-    commandInput.value = commandInput.value.substring(0, start) +
-                          '  ' +
-                          commandInput.value.substring(end);
+  //   // Insert tab at cursor position
+  //   commandInput.value = commandInput.value.substring(0, start) +
+  //                         '  ' +
+  //                         commandInput.value.substring(end);
 
-    // Move cursor after the inserted tab
-    commandInput.selectionStart = commandInput.selectionEnd = start + 2;
-  }
-
-  // Ctrl+C to interrupt running process (SIGINT)
-  if (event.key === 'c' && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault();
-    handleSignal('SIGINT');
-    return;
-  }
-
-  // Ctrl+T to terminate process (SIGTERM)
-  if (event.key === 't' && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault();
-    handleSignal('SIGTERM');
-    return;
-  }
+  //   // Move cursor after the inserted tab
+  //   commandInput.selectionStart = commandInput.selectionEnd = start + 2;
+  // }
 }
 
 // Append command to output area
@@ -348,8 +335,8 @@ function updateStatus(message, type = '') {
 }
 
 // Update status bar with new status message
-function updateStatusBar(message) {
-  if (message !== "") statusBarContent.textContent = message;
+function updateStatusBar(message, force = false) {
+  if (force || message !== "") statusBarContent.textContent = message;
 }
 
 // Handle signal button clicks (SIGINT / SIGTERM)
@@ -401,3 +388,113 @@ function handleSignal(signalType) {
 // Initialize when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializeTerminal);
 
+// Add global keyboard shortcut handler
+document.addEventListener('keydown', (event) => {
+  // Ctrl+C to interrupt running process (SIGINT)
+  if (event.key === 'c' && (event.ctrlKey)) {
+    event.preventDefault();
+    handleSignal('SIGINT');
+    return;
+  }
+
+  // Ctrl+T to terminate process (SIGTERM)
+  if (event.key === 't' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    handleSignal('SIGTERM');
+    return;
+  }
+
+  // // Skip most shortcuts if we're in command input (except for Cmd/Ctrl+W and tabs)
+  // if (event.target === commandInput) {
+  //   return;
+  // }
+
+  // Ctrl+Tab or Cmd+Tab - Next tab
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Tab' && !event.shiftKey) {
+    event.preventDefault();
+    switchToNextTab();
+  }
+
+  // Ctrl+Shift+Tab or Cmd+Shift+Tab - Previous tab
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Tab' && event.shiftKey) {
+    event.preventDefault();
+    switchToPreviousTab();
+  }
+
+  // Ctrl/Cmd + Number - Switch to specific tab
+  if ((event.ctrlKey || event.metaKey) && !isNaN(event.key) && event.key !== '0') {
+    event.preventDefault();
+    switchToTabByNumber(parseInt(event.key));
+  }
+
+  // Ctrl/Cmd + W - Close current tab
+  if ((event.ctrlKey || event.metaKey) && event.key === 'w') {
+    event.preventDefault();
+    closeCurrentTab();
+  }
+}, true);
+
+// Cache tab selection for better performance
+const getTabElements = () => ({
+    all: Array.from(document.querySelectorAll('.tab-radio')),
+    current: document.querySelector('.tab-radio:checked'),
+    terminal: document.getElementById('tab-terminal')
+});
+
+// Focus the appropriate element based on the active tab
+function focusAppropriateElement() {
+    const { current } = getTabElements();
+    if (current.id === 'tab-terminal') {
+        // Focus command input when in terminal tab
+        commandInput.focus();
+    } else {
+        document.getElementById("tab-controls")?.focus();
+        // // Focus the captured output div for scrolling
+        // const panel = document.getElementById(`panel-${current.id}`);
+        // if (panel) {
+        //     const outputDiv = panel.querySelector('.captured-output');
+        //     if (outputDiv) {
+        //         outputDiv.tabIndex = -1; // Make it focusable
+        //         outputDiv.focus();
+        //     }
+        // }
+    }
+}
+
+// Tab navigation functions
+function switchToNextTab() {
+    const { all, current } = getTabElements();
+    if (all.length <= 1) return; // Don't cycle if only terminal tab exists
+
+    const currentIndex = all.indexOf(current);
+    const nextIndex = (currentIndex + 1) % all.length;
+    all[nextIndex].checked = true;
+    focusAppropriateElement();
+}
+
+function switchToPreviousTab() {
+    const { all, current } = getTabElements();
+    if (all.length <= 1) return; // Don't cycle if only terminal tab exists
+
+    const currentIndex = all.indexOf(current);
+    const prevIndex = (currentIndex - 1 + all.length) % all.length;
+    all[prevIndex].checked = true;
+    focusAppropriateElement();
+}
+
+function switchToTabByNumber(number) {
+    const { all } = getTabElements();
+    if (number <= all.length) {
+        all[number - 1].checked = true;
+        focusAppropriateElement();
+    }
+}
+
+function closeCurrentTab() {
+    const { current, terminal } = getTabElements();
+    if (current === terminal) {
+        return;
+    }
+    closeTab(current.id);
+    focusAppropriateElement();
+}

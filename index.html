@@ -29,10 +29,10 @@
             flex-wrap: wrap;
             background-color: #e0e0e0;
             border-bottom: 1px solid #ccc;
-            padding: 5px 5px 0 5px;
+            padding: 0;
             overflow-x: auto;
             white-space: nowrap;
-            gap: 2px;
+            gap: 1px;
         }
 
         .tab-radio {
@@ -42,7 +42,6 @@
         .tab-label {
             order: 1;
             padding: 6px 12px;
-            margin-right: 2px;
             background-color: #d0d0d0;
             border-top-left-radius: 8px;
             border-top-right-radius: 8px;
@@ -329,7 +328,7 @@
         <div class="tab-controls" id="tab-controls">
             <!-- Terminal Tab (Always Present) -->
             <input type="radio" name="tabs" id="tab-terminal" class="tab-radio" checked>
-            <label for="tab-terminal" class="tab-label">Terminal</label>
+            <label for="tab-terminal" class="tab-label">Console</label>
 
             <!-- Terminal Tab Content -->
             <div class="tab-panel terminal-panel">
