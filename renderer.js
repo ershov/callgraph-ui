@@ -118,13 +118,94 @@ function onServerCommandEnd(message) {
   commandOutputCapture = "";
 }
 
-function onCommandOutputCapture(output) {
-  // console.log("Command output capture:", output);
-  if (output.trim()) {
-    // Get the number of existing output tabs (excluding terminal tab)
-    // const outputTabCount = document.querySelectorAll('.tab-radio').length - 1;
-    createNewTab(output, `Out ${tabIdCounter + 1}`);
+// Detect the type of content based on its structure/headers
+function detectContentType(content) {
+  // Check for PNG (starts with PNG signature)
+  if (content.startsWith('\x89PNG\r\n\x1a\n')) {
+    return 'PNG';
   }
+
+  // Check for SVG
+  if (content.trim().startsWith('<?xml') || content.trim().startsWith('<svg')) {
+    return 'SVG';
+  }
+
+  // Check for HTML
+  if (content.trim().startsWith('<!DOCTYPE html') ||
+      content.trim().startsWith('<html') ||
+      (content.includes('<body') && content.includes('</body>'))) {
+    return 'HTML';
+  }
+
+  // Fallback to plain text
+  return 'Text';
+}
+
+// Render content based on detected type
+function renderContent(content, contentType) {
+  switch (contentType) {
+    case 'PNG':
+      return renderPNG(content);
+    case 'SVG':
+      return renderSVG(content);
+    case 'HTML':
+      return renderHTML(content);
+    default:
+      return renderText(content);
+  }
+}
+
+// Render PNG image
+function renderPNG(content) {
+  const container = document.createElement('div');
+  container.className = 'content-container image-container';
+
+  const img = document.createElement('img');
+  img.src = 'data:image/png;base64,' + btoa(content);
+  container.appendChild(img);
+
+  return container;
+}
+
+// Render SVG image
+function renderSVG(content) {
+  const container = document.createElement('div');
+  container.className = 'content-container image-container';
+  container.innerHTML = content;
+
+  return container;
+}
+
+// Render HTML content
+function renderHTML(content) {
+  const container = document.createElement('div');
+  container.className = 'content-container html-container';
+
+  // Create iframe to sandbox HTML content
+  const iframe = document.createElement('iframe');
+  iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms';
+  iframe.srcdoc = content;
+
+  container.appendChild(iframe);
+  return container;
+}
+
+// Render plain text
+function renderText(content) {
+  const container = document.createElement('div');
+  // container.className = 'content-container text-container';
+  container.className = 'captured-output';
+  container.textContent = content;
+  container.tabIndex = -1; // Make it focusable
+
+  return container;
+}
+
+function onCommandOutputCapture(output) {
+  // Don't process empty output
+  if (!output || !output.trim()) return;
+
+  createNewTab(output, `${tabIdCounter + 1}`);
 }
 
 // Create a new tab with the given output and title
@@ -168,12 +249,13 @@ function createNewTab(output, title) {
   panel.className = 'tab-panel';
   panel.id = `panel-${tabId}`;
 
-  // Create output container
-  const outputDiv = document.createElement('div');
-  outputDiv.className = 'captured-output';
-  outputDiv.textContent = output;
+  // Detect content type
+  const contentType = detectContentType(output);
+  const contentElement = renderContent(output, contentType);
 
-  panel.appendChild(outputDiv);
+  // Add the content
+  panel.appendChild(contentElement);
+  titleSpan.textContent = `${contentType} ${title}`;
 
   // Add to DOM
   const controls = document.getElementById('tab-controls');
@@ -183,6 +265,7 @@ function createNewTab(output, title) {
 
   // Switch to new tab
   radio.checked = true;
+  focusAppropriateElement();
 }
 
 // Close a tab and remove its elements
