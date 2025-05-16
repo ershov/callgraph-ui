@@ -14,11 +14,13 @@ let historyIndex = -1;
 
 // Status update detection regex
 const statusMessageRegex = /\x1b\[K([^\r\n]*)[\r\n]/sg;
+const serverStatusMessageRegex = /\n<<<<<<<<<< (.*?) >>>>>>>>>>\n/sg;
 
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
   window.callgraphTerminal.onCallgraphOutput((output) => {
+    // hex dump string
     // Check if stderr contains status update format
     if (output.type === 'stderr') {
       updateStatusBar(output.data);
@@ -26,6 +28,12 @@ function initializeTerminal() {
         // console.log(match, p1, offset, string, groups);
         updateStatusBar(p1);
         return p1;
+      }).trim();
+      if (output.data === "") return;
+    } else if (output.type === 'stdout') {
+      // console.log(output.data.split("").map(x => x.charCodeAt(0).toString(16).padStart(2, "0")).join(" "));
+      output.data = output.data.replaceAll(serverStatusMessageRegex, (match, p1, offset, string, groups) => {
+        return onServerStatusMessage(p1);
       }).trim();
       if (output.data === "") return;
     }
@@ -46,6 +54,12 @@ function initializeTerminal() {
 
   // Focus the input field
   commandInput.focus();
+}
+
+function onServerStatusMessage(message) {
+  console.log(message);
+  updateStatusBar("");
+  return "";
 }
 
 // Handle form submission

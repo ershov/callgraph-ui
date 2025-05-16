@@ -210,9 +210,7 @@ function setupIPC() {
 }
 
 // Set app.isQuitting flag when quitting to prevent process restart
-app.on('before-quit', () => {
-  app.isQuitting = true;
-});
+app.on('before-quit', () => app.isQuitting = true);
 
 // Initialize app when Electron is ready
 app.whenReady().then(() => {
@@ -229,12 +227,13 @@ app.whenReady().then(() => {
 });
 
 // Quit app when all windows are closed
-app.on('window-all-closed', () => {
-  app.quit();
-});
+app.on('window-all-closed', () => app.quit());
+// process.on('SIGINT', () => app.quit());
+// process.on('SIGTERM', () => app.quit());
 
 // Clean up callgraph process on app quit
 app.on('quit', () => {
+  app.isQuitting = true;
   if (callgraphProcess) {
     try {
       // Attempt graceful termination first
