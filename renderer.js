@@ -25,6 +25,16 @@ function Uint8Array_to_String(uint8Array) {
   return String.fromCharCode.apply(null, uint8Array);
 }
 
+function createBlobUrl(content, contentType = 'application/octet-stream') {
+  const url = URL.createObjectURL(
+    new Blob(
+      [Uint8Array.from(content, s => s.charCodeAt(0)).buffer],
+      {type: contentType})
+  );
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return url;
+}
+
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
@@ -176,17 +186,7 @@ function renderPNG(content) {
   }
 
   // img.src = 'data:image/png;base64,' + btoa(content);
-
-  // console.log(Uint8Array.from(content, s => s.charCodeAt(0)));
-  const url = URL.createObjectURL(
-    new Blob(
-      [Uint8Array.from(content, s => s.charCodeAt(0)).buffer],
-      {type: "image/png"})
-  );
-  img.src = url;
-  // Release memory after image is loaded
-  // img.onload = () => URL.revokeObjectURL(url);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  img.src = createBlobUrl(content, "image/png");
 
   container.appendChild(img);
   return container;
@@ -209,7 +209,8 @@ function renderHTML(content) {
   // Create iframe to sandbox HTML content
   const iframe = document.createElement('iframe');
   iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms';
-  iframe.srcdoc = content;
+  // iframe.srcdoc = content;
+  iframe.src = createBlobUrl(content, "text/html");
 
   container.appendChild(iframe);
   return container;
