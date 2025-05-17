@@ -556,7 +556,8 @@ function focusAppropriateElement() {
         // Focus command input when in terminal tab
         commandInput.focus();
     } else {
-        document.getElementById("tab-controls")?.focus();
+        // document.getElementById("tab-controls")?.focus();
+
         // // Focus the captured output div for scrolling
         // const panel = document.getElementById(`panel-${current.id}`);
         // if (panel) {
