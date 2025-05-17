@@ -45,9 +45,10 @@ function initializeTerminal() {
       output.data = output.data.replaceAll(serverStatusMessageRegex, (match, p1, offset, string, groups) => {
         onServerStatusMessage(p1);
         return "";
-      }).trim();
+      });
       if (output.data === "") return;
       commandOutputCapture += output.data;
+      // updateStatus(`Received ${output.data.length} bytes of output = ${commandOutputCapture.length} total`, 'info');
       return;
     }
 
@@ -167,10 +168,27 @@ function renderPNG(content) {
   const container = document.createElement('div');
   container.className = 'content-container image-container';
 
+  // console.log(content.length, atob(btoa(content)).length);
   const img = document.createElement('img');
-  img.src = 'data:image/png;base64,' + btoa(content);
-  container.appendChild(img);
+  img.onerror = () => {
+    console.error('Error loading image:', img.src);
+    container.textContent = 'Error loading image';
+  }
 
+  // img.src = 'data:image/png;base64,' + btoa(content);
+
+  // console.log(Uint8Array.from(content, s => s.charCodeAt(0)));
+  const url = URL.createObjectURL(
+    new Blob(
+      [Uint8Array.from(content, s => s.charCodeAt(0)).buffer],
+      {type: "image/png"})
+  );
+  img.src = url;
+  // Release memory after image is loaded
+  // img.onload = () => URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+  container.appendChild(img);
   return container;
 }
 
@@ -210,7 +228,7 @@ function renderText(content) {
 
 function onCommandOutputCapture(output) {
   // Don't process empty output
-  if (!output || !output.trim()) return;
+  if (!output) return;
 
   createNewTab(output, `${tabIdCounter + 1}`);
 }
