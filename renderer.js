@@ -608,3 +608,53 @@ function closeCurrentTab() {
     closeTab(current.id);
     focusAppropriateElement();
 }
+
+var mouseX = 600;
+var mouseY = 450;
+
+document.addEventListener("mousemove", ev => [mouseX, mouseY] = [ev.clientX, ev.clientY-29], {passive: true});
+
+function zoomBy(delta) {
+  if (delta == 0) return;
+  const container = document.getElementById("panel-" + getTabElements().current.id)?.querySelector('.content-container');
+  if (!container) return;
+  let e = container.firstElementChild;
+
+  let prevScrollWidth = container.scrollWidth, prevScrollHeight = container.scrollHeight;
+  let prevZoom = (container.zoomLevel || 0);
+  let zoom = Math.min(Math.max(delta + prevZoom, 0), 8.);
+  if (zoom == prevZoom) return;
+  let posX = container.scrollLeft + mouseX /* container.clientWidth / 2 */,
+      posY = container.scrollTop  + mouseY /* container.clientHeight / 2 */;
+  let zoomFactor = Math.pow(2, zoom);
+  let zoomPct = `${zoomFactor * 100}%`;
+  e.style.maxWidth = zoomPct;
+  e.style.maxHeight = zoomPct;
+  if (delta > 0 && prevScrollWidth == container.scrollWidth && prevScrollHeight == container.scrollHeight) {
+    // Reached the browser's limit.
+    zoomFactor = Math.pow(2, prevZoom);
+    zoomPct = `${zoomFactor * 100}%`;
+    e.style.maxWidth = zoomPct;
+    e.style.maxHeight = zoomPct;
+    return;
+  }
+  container.zoomLevel = zoom;
+  // console.log(container.scrollWidth);
+  container.scrollTo(posX * (container.scrollWidth  / prevScrollWidth)  - mouseX /* container.clientWidth / 2 */,
+                     posY * (container.scrollHeight / prevScrollHeight) - mouseY /* container.clientHeight / 2 */);
+  // let prevZoomFactor = Math.pow(2, prevZoom);
+  // let zoomChg = zoomFactor / prevZoomFactor;
+  // console.log(`delta = ${delta}   prevZoom = ${prevZoom}   zoom = ${zoom}   zoomFactor = ${zoomFactor}`, [container.scrollWidth, container.clientWidth, container.offsetWidth, container.naturalWidth, container.scrollLeft], zoomChg);
+  // container.scrollBy(zoomChg * container.scrollWidth / posX,
+  //                    zoomChg * container.scrollHeight / posY);
+}
+
+document.addEventListener("wheel", ev => {
+  if (!ev.shiftKey && (ev.altKey || ev.ctrlKey || ev.metaKey)) {
+    ev.preventDefault();
+    // ev.cancelBubble = true;
+    let delta = ev.wheelDeltaY ? -ev.wheelDeltaY : ev.wheelDeltaX ? -ev.wheelDeltaX : 0;
+    if (delta == 0) return;
+    zoomBy(delta * 0.001);
+  }
+}, {passive: false});
