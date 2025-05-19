@@ -209,19 +209,35 @@
         .command-form {
             display: flex;
             margin: 6px;
-            /* flex-direction: column; */
+            /* flex-wrap: wrap; */
             gap: 6px;
         }
 
         .command-textarea {
             resize: vertical;
-            min-height: 60px;
+            min-height: 45px;
             padding: 8px;
             font-family: 'Menlo', monospace;
             font-size: 14px;
             border: 1px solid #ccc;
             border-radius: 4px;
             flex-grow: 1;
+            /* width: calc(100% - 16px); */
+            width: -webkit-fill-available;
+        }
+
+        .code-input {
+            padding: 0 8px;
+            font-family: 'Menlo', monospace;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .command-preset {
+            width: -webkit-fill-available;
+            flex-grow: 1;
+            color: #008;
         }
 
         .form-controls {
@@ -229,6 +245,9 @@
             flex-direction: column;
             /* justify-content: space-between; */
             /* align-items: center; */
+            width: 128px;
+            height: auto;
+            gap: 1px;
         }
 
         button {
@@ -241,6 +260,7 @@
             cursor: pointer;
             border-radius: 4px;
             transition: background-color 0.3s;
+            white-space: nowrap;
         }
 
         .submit-btn {
@@ -303,6 +323,32 @@
             margin-bottom: 5px;
         }
 
+        [data-tooltip-bottom]:hover::after {
+            margin-bottom: 0;
+            bottom: unset;
+            margin-top: 5px;
+            top: 100%;
+        }
+
+        [data-tooltip-left]:hover::after {
+            margin-bottom: unset;
+            margin-right: 5px;
+            bottom: unset;
+            left: unset;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        [data-tooltip-right]:hover::after {
+            margin-bottom: unset;
+            margin-left: 5px;
+            bottom: unset;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
         .error {
             color: #e06c75;
         }
@@ -361,6 +407,14 @@
             width: 100%;
         }
 
+        .command-palette {
+            width: 100%;
+        }
+
+        .command-palette > span {
+            display: inline-block;
+        }
+
         ellipse {
             fill: #fff; /* Make ellipses filled so that they can capture events. */
         }
@@ -380,16 +434,45 @@
                     <div id="output" class="output-area"></div>
                     <div class="input-area">
                         <form id="command-form" class="command-form">
-                            <textarea
-                                id="command-input"
-                                class="command-textarea"
-                                placeholder="Enter callgraph command here..."
-                                autofocus
-                            ></textarea>
+                            <div style="flex-grow: 1">
+                                <div class="command-palette" id="command-palette">
+                                    <span data-tooltip="-f"        data-tooltip-bottom>From    <input type="text" id="command-from"    class="code-input command-from"    placeholder="func names or /re"></span>
+                                    <span data-tooltip="-t"        data-tooltip-bottom>To      <input type="text" id="command-to"      class="code-input command-to"      placeholder="func names or /re"></span>
+                                    <span data-tooltip="-x"        data-tooltip-bottom>Exclude <input type="text" id="command-exclude" class="code-input command-exclude" placeholder="func names or /re"></span>
+
+                                    <span data-tooltip="-d"        data-tooltip-bottom>Depth   <input type="text" id="command-depth"   class="code-input command-depth"   placeholder="n/a"   size=3 value="4"></span>
+                                    <span data-tooltip="--timeout" data-tooltip-bottom>Timeout <input type="text" id="command-timeout" class="code-input command-timeout" placeholder="n/a" size=3 value="5"></span>
+
+                                    <span><select is="select" id="command-output-format" class="command-output-format" style="width: 7ch" data-tooltip="Output format" data-tooltip-bottom>
+                                        <option value="list">List</option>
+                                        <option value="text">Text</option>
+                                        <option value="text-indent">Indented Text</option>
+                                        <option value="svg" selected>SVG</option>
+                                        <option value="png">PNG</option>
+                                        <option value="dot">Graphviz</option>
+                                        <option value="dotdot">Graphviz/w layout</option>
+                                        <option value="svg-html">SVG-HTML</option>
+                                    </select></span>
+                                    <span><select is="select" id="command-dir" class="command-dir" style="width: 7ch" data-tooltip="Graph direction" data-tooltip-bottom>
+                                        <option value="lr" selected>LR</option>
+                                        <option value="tb">TB</option>
+                                        <option value="rl">RL</option>
+                                        <option value="bt">BT</option>
+                                    </select></span>
+                                </div>
+                                <input type="text" id="command-preset" class="code-input command-preset" readonly>
+                                <textarea
+                                    id="command-input"
+                                    class="command-textarea"
+                                    placeholder="additional options"
+                                    autofocus
+                                ></textarea>
+                            </div>
                             <div class="form-controls">
-                                <button type="submit" id="submit-btn"    class="submit-btn"    data-tooltip="Send command to callgraph">Run Command</button>
-                                <button type="button" id="interrupt-btn" class="interrupt-btn" data-tooltip="Send SIGINT (Ctrl+C) - Interrupt current process">Interrupt</button>
-                                <button type="button" id="terminate-btn" class="terminate-btn" data-tooltip="Send SIGTERM (Ctrl+T) - Terminate current process">Reload</button>
+                                <button type="submit" id="submit-btn"    class="submit-btn"    data-tooltip="Send command (Enter)"         data-tooltip-left>Run Command</button>
+                                <div style="flex-grow: 1"></div>
+                                <button type="button" id="interrupt-btn" class="interrupt-btn" data-tooltip="Interrupt (Ctrl+C)" data-tooltip-left>Interrupt</button>
+                                <button type="button" id="terminate-btn" class="terminate-btn" data-tooltip="Reload Callgraph (Ctrl+T)"    data-tooltip-left>Reload</button>
                             </div>
                         </form>
                     </div>

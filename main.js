@@ -62,7 +62,7 @@ function initCallgraphProcess() {
   try {
     // Spawn a persistent callgraph session
     // Use login shell to ensure consistent environment
-    callgraphProcess = spawn('callgraph', ['-server'], {
+    callgraphProcess = spawn('callgraph', ['-server', '-hlends'], {
       shell: false, // Don't spawn within another shell
       env: process.env // Inherit current environment variables
     });

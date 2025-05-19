@@ -2,6 +2,8 @@
 const outputElement = document.getElementById('output');
 const commandForm = document.getElementById('command-form');
 const commandInput = document.getElementById('command-input');
+const commandPalette = document.getElementById('command-palette');
+const commandPreset = document.getElementById('command-preset');
 const submitButton = document.getElementById('submit-btn');
 const interruptButton = document.getElementById('interrupt-btn');
 const terminateButton = document.getElementById('terminate-btn');
@@ -20,6 +22,8 @@ let commandOutputCapture = '';
 
 // Global tab counter for unique IDs
 let tabIdCounter = 0;
+
+var nonEmptyPreset = false;
 
 function Uint8Array_to_String(uint8Array) {
   return String.fromCharCode.apply(null, uint8Array);
@@ -70,11 +74,16 @@ function initializeTerminal() {
   commandForm.addEventListener('submit', handleCommandSubmit);
 
   // Add keyboard shortcuts
-  commandInput.addEventListener('keydown', handleKeyDown);
+  commandForm.addEventListener('keydown', handleKeyDown);
 
   // Set up signal buttons
   interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
   terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
+
+  commandPalette.addEventListener('input', (event) => {console.log(event); generateCommandPreset();}); // TODO::
+  document.addEventListener('contextmenu', (event) => console.log(event)); // TODO::
+
+  generateCommandPreset();
 
   // Disable the submit button button initially
   // submitButton.disabled = true;
@@ -311,23 +320,56 @@ function closeTab(tabId) {
   panel.remove();
 }
 
+function historyPush() {
+  let entry = {"_": commandInput.value};
+  commandInput.value = '';
+  historyIndex = -1;
+  for (const [contribRet, defval, name, func] of commandOptions) {
+    const e = document.getElementById(name);
+    if (e) {
+      entry[name] = e.value;
+      if (defval !== null) e.value = defval;
+    } else {
+      entry[name] = "";
+    }
+  }
+  commandHistory.unshift(entry);
+  if (commandHistory.length > 100) {
+    commandHistory.pop(); // Limit history size
+  }
+}
+
+function historyRecall(index) {
+  if (index >= commandHistory.length) return;
+  const entry = commandHistory[index];
+  commandInput.value = index >= 0 ? entry["_"] : "";
+  for (const [contribRet, defval, name, func] of commandOptions) {
+    const el = document.getElementById(name);
+    if (el) {
+      if (index >= 0) {
+        el.value = entry[name];
+      } else if (defval !== null) {
+        el.value = defval;
+      }
+    }
+  }
+  // Move cursor to end of input
+  // setTimeout(() => commandInput.selectionStart = commandInput.selectionEnd = commandInput.value.length, 0);
+  generateCommandPreset();
+}
+
 // Handle form submission
 function handleCommandSubmit(event) {
   event.preventDefault();
 
-  const command = commandInput.value.trim();
+  let command = commandInput.value.trim();
 
   // Don't do anything if command is empty
-  if (!command) {
+  if (command === "" && !nonEmptyPreset) {
     return;
   }
 
-  // Add to command history
-  commandHistory.unshift(command);
-  if (commandHistory.length > 100) {
-    commandHistory.pop(); // Limit history size
-  }
-  historyIndex = -1;
+  command = commandPreset.value + " " + command;
 
   // Display command with prompt
   appendCommandToOutput(command);
@@ -336,8 +378,7 @@ function handleCommandSubmit(event) {
   try {
     const success = window.callgraphTerminal.executeCommand(command);
     if (success) {
-      // Clear input and update status
-      commandInput.value = '';
+      historyPush();
       updateStatusBar('Command sent');
     } else {
       updateStatus('Failed to send command', 'error');
@@ -362,8 +403,7 @@ function handleKeyDown(event) {
     event.preventDefault();
 
     if (historyIndex < commandHistory.length - 1) {
-      historyIndex++;
-      commandInput.value = commandHistory[historyIndex];
+      historyRecall(++historyIndex);
 
       // Move cursor to end of input
       setTimeout(() => {
@@ -378,11 +418,10 @@ function handleKeyDown(event) {
     event.preventDefault();
 
     if (historyIndex > 0) {
-      historyIndex--;
-      commandInput.value = commandHistory[historyIndex];
+      historyRecall(--historyIndex);
     } else if (historyIndex === 0) {
       historyIndex = -1;
-      commandInput.value = '';
+      historyRecall(historyIndex);
     }
     return;
   }
@@ -607,6 +646,30 @@ function closeCurrentTab() {
     }
     closeTab(current.id);
     focusAppropriateElement();
+}
+
+const commandOptions = [
+  [0, null,  "command-depth",         val => `-d ${val}`],
+  [0, null,  "command-timeout",       val => `--timeout ${val}`],
+  [0, "lr",  "command-dir",           val => `--dir ${val}`],
+  [0, "svg", "command-output-format", val => val === "text" ? "" : val === "text-indent" ? `--indents` : `-${val}`],
+  [1, "",    "command-from",          val => `-f '${val}'`],
+  [1, "",    "command-to",            val => `-t '${val}'`],
+  [0, "",    "command-exclude",       val => `-x '${val}'`],
+];
+
+function generateCommandPreset() {
+  let nonempty = false;
+  let val = ["--continue"];
+  for (const [contribRet, defval, name, func] of commandOptions) {
+    const el = document.getElementById(name);
+    if (el && el.value !== "") {
+      if (contribRet) nonempty = true;
+      val.push(func(el.value));
+    }
+  }
+  commandPreset.value = val.join(" ");
+  nonEmptyPreset = nonempty;
 }
 
 var mouseX = 600;
