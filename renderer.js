@@ -350,8 +350,8 @@ function handleCommandSubmit(event) {
 
 // Handle keyboard shortcuts
 function handleKeyDown(event) {
-  // Ctrl+Enter to submit
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+  // if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { // Ctrl+Enter to submit
+  if (event.key === 'Enter' && !event.shiftKey) { // no shift - submit
     event.preventDefault();
     commandForm.dispatchEvent(new Event('submit'));
     return;

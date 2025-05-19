@@ -136,7 +136,7 @@ function setupIPC() {
     if (callgraphProcess && callgraphProcess.stdin.writable) {
       try {
         // Write command to callgraph stdin with a newline
-        callgraphProcess.stdin.write(command + '\n');
+        callgraphProcess.stdin.write(command.replaceAll(/\n/g, "\\\n") + '\n');
       } catch (error) {
         console.error('Error writing to callgraph stdin:', error);
 
