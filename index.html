@@ -79,7 +79,7 @@
             background-color: #fff;
             color: #333;
             position: relative;
-            z-index: 1;
+            /* z-index: 1; */
             border-bottom: 1px solid #fff; /* Hide bottom border when active */
             margin-bottom: -1px; /* Compensate for the hidden border */
         }
@@ -95,7 +95,7 @@
             height: calc(100% - 29px - 20px);
             position: fixed;
             top: 29px;
-            z-index: 0;
+            /* z-index: 0; */
         }
 
         .terminal-panel {
@@ -227,7 +227,7 @@
         }
 
         .code-input {
-            padding: 0 8px;
+            padding: 0 3px;
             font-family: 'Menlo', monospace;
             font-size: 14px;
             border: 1px solid #ccc;
@@ -235,6 +235,7 @@
         }
 
         .command-preset {
+            padding: 0 8px;
             width: -webkit-fill-available;
             flex-grow: 1;
             color: #008;
@@ -408,11 +409,20 @@
         }
 
         .command-palette {
+            display: flex;
             width: 100%;
+            gap: 8px;
         }
 
         .command-palette > span {
+            /* display: inline-block; */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .command-palette > span > span {
             display: inline-block;
+            align-self: end;
         }
 
         ellipse {
@@ -436,29 +446,35 @@
                         <form id="command-form" class="command-form">
                             <div style="flex-grow: 1">
                                 <div class="command-palette" id="command-palette">
-                                    <span data-tooltip="-f"        data-tooltip-bottom>From    <input type="text" id="command-from"    class="code-input command-from"    placeholder="func names or /re"></span>
-                                    <span data-tooltip="-t"        data-tooltip-bottom>To      <input type="text" id="command-to"      class="code-input command-to"      placeholder="func names or /re"></span>
-                                    <span data-tooltip="-x"        data-tooltip-bottom>Exclude <input type="text" id="command-exclude" class="code-input command-exclude" placeholder="func names or /re"></span>
+                                    <span>
+                                        <span data-tooltip="-f"        data-tooltip-bottom>From    <input accesskey=f type="text" id="command-from"    class="code-input command-from"    placeholder="func names or /re" size=40></span>
+                                        <span data-tooltip="-t"        data-tooltip-bottom>To      <input accesskey=t type="text" id="command-to"      class="code-input command-to"      placeholder="func names or /re" size=40></span>
+                                        <span data-tooltip="-x"        data-tooltip-bottom>Exclude <input accesskey=x type="text" id="command-exclude" class="code-input command-exclude" placeholder="func names or /re" size=40></span>
+                                    </span>
 
-                                    <span data-tooltip="-d"        data-tooltip-bottom>Depth   <input type="text" id="command-depth"   class="code-input command-depth"   placeholder="n/a"   size=3 value="4"></span>
-                                    <span data-tooltip="--timeout" data-tooltip-bottom>Timeout <input type="text" id="command-timeout" class="code-input command-timeout" placeholder="n/a" size=3 value="5"></span>
+                                    <span>
+                                        <span data-tooltip="-d"        data-tooltip-bottom>Depth   <input accesskey=d type="text" id="command-depth"   class="code-input command-depth"   placeholder="n/a" size=2 value=""></span>
+                                        <span data-tooltip="--timeout" data-tooltip-bottom>Timeout <input             type="text" id="command-timeout" class="code-input command-timeout" placeholder="n/a" size=2 value="5"></span>
+                                    </span>
 
-                                    <span><select is="select" id="command-output-format" class="command-output-format" style="width: 7ch" data-tooltip="Output format" data-tooltip-bottom>
-                                        <option value="list">List</option>
-                                        <option value="text">Text</option>
-                                        <option value="text-indent">Indented Text</option>
-                                        <option value="svg" selected>SVG</option>
-                                        <option value="png">PNG</option>
-                                        <option value="dot">Graphviz</option>
-                                        <option value="dotdot">Graphviz/w layout</option>
-                                        <option value="svg-html">SVG-HTML</option>
-                                    </select></span>
-                                    <span><select is="select" id="command-dir" class="command-dir" style="width: 7ch" data-tooltip="Graph direction" data-tooltip-bottom>
-                                        <option value="lr" selected>LR</option>
-                                        <option value="tb">TB</option>
-                                        <option value="rl">RL</option>
-                                        <option value="bt">BT</option>
-                                    </select></span>
+                                    <span>
+                                        <span data-tooltip="Output format" data-tooltip-bottom>Output <select accesskey=o id="command-output-format" class="command-output-format" style="width: 7ch">
+                                            <option value="list">List</option>
+                                            <option value="text">Text</option>
+                                            <option value="text-indent">Indented Text</option>
+                                            <option value="svg" selected>SVG</option>
+                                            <option value="png">PNG</option>
+                                            <option value="dot">Graphviz</option>
+                                            <option value="dotdot">Graphviz/w layout</option>
+                                            <option value="svg-html">SVG-HTML</option>
+                                        </select></span>
+                                        <span data-tooltip="Graph direction" data-tooltip-bottom>Dir <select id="command-dir" class="command-dir" style="width: 7ch">
+                                            <option value="lr" selected>LR</option>
+                                            <option value="tb">TB</option>
+                                            <option value="rl">RL</option>
+                                            <option value="bt">BT</option>
+                                        </select></span>
+                                    </span>
                                 </div>
                                 <input type="text" id="command-preset" class="code-input command-preset" readonly>
                                 <textarea

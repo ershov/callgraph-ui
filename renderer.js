@@ -80,7 +80,7 @@ function initializeTerminal() {
   interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
   terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
 
-  commandPalette.addEventListener('input', (event) => {console.log(event); generateCommandPreset();}); // TODO::
+  commandPalette.addEventListener('input', generateCommandPreset); // TODO::
   document.addEventListener('contextmenu', (event) => console.log(event)); // TODO::
 
   generateCommandPreset();
@@ -399,7 +399,7 @@ function handleKeyDown(event) {
   }
 
   // Up arrow for previous command
-  if (event.key === 'ArrowUp') {
+  if (event.key === 'ArrowUp' && document.activeElement.tagName !== "SELECT") {
     event.preventDefault();
 
     if (historyIndex < commandHistory.length - 1) {
@@ -414,7 +414,7 @@ function handleKeyDown(event) {
   }
 
   // Down arrow for next command
-  if (event.key === 'ArrowDown') {
+  if (event.key === 'ArrowDown' && document.activeElement.tagName !== "SELECT") {
     event.preventDefault();
 
     if (historyIndex > 0) {
@@ -658,9 +658,16 @@ const commandOptions = [
   [0, "",    "command-exclude",       val => `-x '${val}'`],
 ];
 
-function generateCommandPreset() {
+function generateCommandPreset(ev) {
   let nonempty = false;
   let val = ["--continue"];
+  if (ev && ev.inputType === "insertText" && (ev.target.id == "command-from" || ev.target.id == "command-to")) {
+    const [from, to, depth] = [document.getElementById("command-from"), document.getElementById("command-to"), document.getElementById("command-depth")];
+    const [target, other] = ev.target.id == "command-from" ? [from, to] : [to, from];
+    if (target.value.length === 1 && other.value.length > 0 && !depth.value) {
+      depth.value = "4";
+    }
+  }
   for (const [contribRet, defval, name, func] of commandOptions) {
     const el = document.getElementById(name);
     if (el && el.value !== "") {
