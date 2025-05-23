@@ -340,8 +340,9 @@ function createNewTab(output, title) {
   titleSpan.textContent = `${contentType} ${title}`;
 
   // Store the command that generated this content
-  panel.command = lastExecutedCommand;
-  panel.commandHistoryEntry = commandHistory[0];
+  panel.lastExecutedCommand = lastExecutedCommand;
+  panel.commandHistory = [...commandHistory];
+  panel.historyIndex = historyIndex;
 
   // Add context menu handling
   panel.addEventListener('contextmenu', (e) => {
@@ -349,7 +350,7 @@ function createNewTab(output, title) {
 
   // Show context menu with relevant data
     showContextMenu({
-      command: panel.command,
+      command: panel.lastExecutedCommand,
       contentType,
       content: output,
       tabId
@@ -715,10 +716,10 @@ function showContextMenu(menuData) {
           });
 
           if (filePath) {
-            if (typeof content === 'string') {
-              await fs.writeFile(filePath, content, 'utf8');
+            if (contentType === 'PNG') {
+              await fs.writeFile(filePath, Buffer.from(Uint8Array.from(content, s => s.charCodeAt(0)).buffer));
             } else {
-              await fs.writeFile(filePath, Buffer.from(content));
+              await fs.writeFile(filePath, content, 'utf8');
             }
             updateStatusBar(`Content saved to: ${filePath}`);
           }
