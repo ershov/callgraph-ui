@@ -15,6 +15,9 @@ const terminateButton = document.getElementById('terminate-btn');
 const statusBar = document.getElementById('status-bar');
 const statusBarContent = document.getElementById('status-bar-content');
 
+const inputArea = document.getElementById('input-area');
+const terminalContainer = document.getElementById('terminal-container');
+
 // Search elements
 const searchBox = document.getElementById('search-box');
 const searchInput = document.getElementById('search-input');
@@ -882,7 +885,7 @@ const getTabElements = () => ({
 // Focus the appropriate element based on the active tab
 function focusAppropriateElement() {
     const { current } = getTabElements();
-    if (current.id === 'tab-terminal') {
+    if (current.id === 'tab-terminal' || isConsoleVisible()) {
         // Focus command input when in terminal tab
         commandInput.focus();
     } else {
@@ -937,6 +940,38 @@ function closeCurrentTab() {
     closeTab(current.id);
     focusAppropriateElement();
 }
+
+/////
+
+document.addEventListener('keydown', ev => {
+  if (ev.key === "`" /* && (ev.ctrlKey || ev.metaKey) */ ) {
+    ev.preventDefault();
+    toggleConsole();
+  }
+});
+
+
+function showConsole() {
+  inputArea.classList.add("floating-panel");
+  document.body.appendChild(inputArea);
+  commandInput.focus();
+}
+
+function hideConsole() {
+  inputArea.classList.remove("floating-panel");
+  terminalContainer.appendChild(inputArea);
+  focusAppropriateElement();
+}
+
+function isConsoleVisible() {
+  return inputArea.classList.contains("floating-panel");
+}
+
+function toggleConsole() {
+  isConsoleVisible() ? hideConsole() : showConsole();
+}
+
+/////
 
 const commandOptions = [
   [0, null,  "command-depth",         val => `-d ${val}`],
