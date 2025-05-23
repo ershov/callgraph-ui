@@ -1,5 +1,7 @@
 // Import Electron modules directly
 const { ipcRenderer } = require('electron');
+const { dialog, Menu } = require('@electron/remote');
+const fs = require('fs').promises;
 
 // DOM Elements
 const outputElement = document.getElementById('output');
@@ -82,28 +84,6 @@ function initializeTerminal() {
 
     // Regular output handling for non-status messages
     appendOutput(output);
-  });
-
-  // Set up event handlers for context menu actions
-  ipcRenderer.on('show-command', (event, command) => {
-    alert(command);
-  });
-
-  ipcRenderer.on('save-content', async (event, { contentType, content, defaultPath }) => {
-    try {
-      const path = await showSaveDialog({
-        defaultPath,
-        filters: getFileFilters(contentType)
-      });
-
-      if (path) {
-        await saveFile(path, content);
-        updateStatusBar(`Content saved to: ${path}`);
-      }
-    } catch (error) {
-      console.error('Error saving content:', error);
-      updateStatusBar(`Error saving content: ${error.message}`);
-    }
   });
 
   // Set up form submission
@@ -361,7 +341,7 @@ function createNewTab(output, title, command = '') {
     e.preventDefault();
 
   // Show context menu with relevant data
-    ipcRenderer.send('show-context-menu', {
+    showContextMenu({
       command: panel.dataset.command,
       contentType,
       content: output,
@@ -695,17 +675,51 @@ function stopFindInPage(action = 'clearSelection') {
   return true;
 }
 
+// Helper function to get default extension for a content type
+function getDefaultExtension(contentType) {
+  switch (contentType) {
+    case 'PNG': return 'png';
+    case 'SVG': return 'svg';
+    case 'HTML': return 'html';
+    default: return 'txt';
+  }
+}
+
+// Enhanced context menu using @electron/remote
 function showContextMenu(menuData) {
-  ipcRenderer.send('show-context-menu', menuData);
-  return true;
-}
+  const { command, contentType, content } = menuData;
 
-async function showSaveDialog(options) {
-  return ipcRenderer.invoke('show-save-dialog', options);
-}
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Show Command',
+      click: () => alert(command)
+    },
+    {
+      label: 'Save As...',
+      async click() {
+        try {
+          const { filePath } = await dialog.showSaveDialog({
+            defaultPath: `output.${getDefaultExtension(contentType)}`,
+            filters: getFileFilters(contentType)
+          });
 
-async function saveFile(filepath, content) {
-  return ipcRenderer.invoke('save-file', filepath, content);
+          if (filePath) {
+            if (typeof content === 'string') {
+              await fs.writeFile(filePath, content, 'utf8');
+            } else {
+              await fs.writeFile(filePath, Buffer.from(content));
+            }
+            updateStatusBar(`Content saved to: ${filePath}`);
+          }
+        } catch (error) {
+          console.error('Error saving content:', error);
+          updateStatusBar(`Error saving content: ${error.message}`);
+        }
+      }
+    }
+  ]);
+
+  menu.popup();
 }
 
 // Start search with given text

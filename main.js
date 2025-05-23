@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
 const fs = require('fs').promises;
 const path = require('path');
 const { spawn } = require('child_process');
+const { initialize, enable } = require('@electron/remote/main');
 
 // Keep a global reference of objects to prevent garbage collection
 let mainWindow = null;
@@ -26,67 +27,7 @@ function killCallgraphProcess() {
   }
 }
 
-// Handle context menu request
-ipcMain.on('show-context-menu', (event, menuData) => {
-  const { command, contentType, content, tabId } = menuData;
-
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'Show Command',
-      click: () => {
-        event.sender.send('show-command', command);
-      }
-    },
-    {
-      label: 'Save As...',
-      click: async () => {
-        try {
-          const defaultPath = `output.${getDefaultExtension(contentType)}`;
-          event.sender.send('save-content', { contentType, content, defaultPath });
-        } catch (error) {
-          console.error('Error handling Save As:', error);
-        }
-      }
-    }
-  ]);
-
-  menu.popup(BrowserWindow.fromWebContents(event.sender));
-});
-
-// Handle save dialog request
-ipcMain.handle('show-save-dialog', async (event, options) => {
-  const result = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
-    title: 'Save Content',
-    ...options
-  });
-
-  return result.filePath;
-});
-
-// Handle file saving
-ipcMain.handle('save-file', async (event, filepath, content) => {
-  try {
-    if (typeof content === 'string') {
-      await fs.writeFile(filepath, content, 'utf8');
-    } else {
-      // Handle binary content (e.g., PNG images)
-      await fs.writeFile(filepath, Buffer.from(content));
-    }
-    return true;
-  } catch (error) {
-    console.error('Error saving file:', error);
-    throw error;
-  }
-});
-
-function getDefaultExtension(contentType) {
-  switch (contentType) {
-    case 'PNG': return 'png';
-    case 'SVG': return 'svg';
-    case 'HTML': return 'html';
-    default: return 'txt';
-  }
-}
+// Removed redundant IPC handlers that are now handled directly in renderer via @electron/remote
 
 // Create the main window
 function createWindow() {
@@ -315,7 +256,14 @@ process.on('SIGTERM', () => handleTerminationSignal('SIGTERM'));
 
 // Initialize app when Electron is ready
 app.whenReady().then(() => {
+  // Initialize remote module
+  initialize();
+
   createWindow();
+
+  // Enable remote module for the window
+  enable(mainWindow.webContents);
+
   initCallgraphProcess();
   setupIPC();
 
