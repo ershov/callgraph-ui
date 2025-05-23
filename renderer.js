@@ -17,6 +17,7 @@ const statusBarContent = document.getElementById('status-bar-content');
 
 const inputArea = document.getElementById('input-area');
 const terminalContainer = document.getElementById('terminal-container');
+const terminalPanel = document.getElementById('panel-tab-0');
 
 // Search elements
 const searchBox = document.getElementById('search-box');
@@ -26,9 +27,11 @@ const searchNextBtn = document.getElementById('search-next');
 const searchCloseBtn = document.getElementById('search-close');
 const searchCount = document.getElementById('search-count');
 
-// Command history functionality
-const commandHistory = [];
-let historyIndex = -1;
+let history = {
+  commandHistory: [],
+  historyIndex: -1,
+  lastExecutedCommand: '',
+};
 
 // Status update detection regex
 const statusMessageRegex = /\x1b\[K([^\r\n]*)[\r\n]/sg;
@@ -38,9 +41,7 @@ let commandOutputCapture = '';
 
 // Global tab counter for unique IDs
 let tabIdCounter = 0;
-
-// Store the last executed command
-let lastExecutedCommand = '';
+let prevTabIdx = 0;
 
 var nonEmptyPreset = false;
 
@@ -100,6 +101,12 @@ function initializeTerminal() {
   terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
 
   commandPalette.addEventListener('input', generateCommandPreset);
+
+  terminalPanel.history = {
+    commandHistory: [],
+    historyIndex: -1,
+    lastExecutedCommand: '',
+  };
 
   generateCommandPreset();
 
@@ -340,9 +347,11 @@ function createNewTab(output, title) {
   titleSpan.textContent = `${contentType} ${title}`;
 
   // Store the command that generated this content
-  panel.lastExecutedCommand = lastExecutedCommand;
-  panel.commandHistory = [...commandHistory];
-  panel.historyIndex = historyIndex;
+  panel.history = {
+    commandHistory: [...history.commandHistory],
+    historyIndex: -1,
+    lastExecutedCommand: history.lastExecutedCommand,
+  };
 
   // Add context menu handling
   panel.addEventListener('contextmenu', (e) => {
@@ -350,7 +359,7 @@ function createNewTab(output, title) {
 
   // Show context menu with relevant data
     showContextMenu({
-      command: panel.lastExecutedCommand,
+      command: history.lastExecutedCommand,
       contentType,
       content: output,
       tabId
@@ -378,7 +387,7 @@ function closeTab(tabId) {
 
   // If this tab is active, switch to terminal tab
   if (radio.checked) {
-    document.getElementById('tab-terminal').checked = true;
+    document.getElementById('tab-0').checked = true;
   }
 
   // Remove tab elements
@@ -392,7 +401,7 @@ function closeTab(tabId) {
 function historyPush() {
   let entry = {"_": commandInput.value};
   commandInput.value = '';
-  historyIndex = -1;
+  history.historyIndex = -1;
   for (const [contribRet, defval, name, func] of commandOptions) {
     const e = document.getElementById(name);
     if (e) {
@@ -402,15 +411,15 @@ function historyPush() {
       entry[name] = "";
     }
   }
-  commandHistory.unshift(entry);
-  if (commandHistory.length > 100) {
-    commandHistory.pop(); // Limit history size
+  history.commandHistory.unshift(entry);
+  if (history.commandHistory.length > 100) {
+    history.commandHistory.pop(); // Limit history size
   }
 }
 
 function historyRecall(index) {
-  if (index >= commandHistory.length) return;
-  const entry = commandHistory[index];
+  if (index >= history.commandHistory.length) return;
+  const entry = history.commandHistory[index];
   commandInput.value = index >= 0 ? entry["_"] : "";
   for (const [contribRet, defval, name, func] of commandOptions) {
     const el = document.getElementById(name);
@@ -431,21 +440,21 @@ function historyRecall(index) {
 function handleCommandSubmit(event) {
   event.preventDefault();
 
-  lastExecutedCommand = commandInput.value.trim();
+  history.lastExecutedCommand = commandInput.value.trim();
 
   // Don't do anything if command is empty
-  if (lastExecutedCommand === "" && !nonEmptyPreset) {
+  if (history.lastExecutedCommand === "" && !nonEmptyPreset) {
     return;
   }
 
-  lastExecutedCommand = commandPreset.value + " " + lastExecutedCommand;
+  history.lastExecutedCommand = commandPreset.value + " " + history.lastExecutedCommand;
 
   // Display command with prompt
-  appendCommandToOutput(lastExecutedCommand);
+  appendCommandToOutput(history.lastExecutedCommand);
 
   // Send command to main process
   try {
-    ipcRenderer.send('execute-command', lastExecutedCommand);
+    ipcRenderer.send('execute-command', history.lastExecutedCommand);
     historyPush();
     updateStatusBar('Command sent');
   } catch (error) {
@@ -467,8 +476,8 @@ function handleKeyDown(event) {
   if (event.key === 'ArrowUp' && document.activeElement.tagName !== "SELECT") {
     event.preventDefault();
 
-    if (historyIndex < commandHistory.length - 1) {
-      historyRecall(++historyIndex);
+    if (history.historyIndex < history.commandHistory.length - 1) {
+      historyRecall(++history.historyIndex);
 
       // Move cursor to end of input
       setTimeout(() => {
@@ -482,11 +491,11 @@ function handleKeyDown(event) {
   if (event.key === 'ArrowDown' && document.activeElement.tagName !== "SELECT") {
     event.preventDefault();
 
-    if (historyIndex > 0) {
-      historyRecall(--historyIndex);
-    } else if (historyIndex === 0) {
-      historyIndex = -1;
-      historyRecall(historyIndex);
+    if (history.historyIndex > 0) {
+      historyRecall(--history.historyIndex);
+    } else if (history.historyIndex === 0) {
+      history.historyIndex = -1;
+      historyRecall(history.historyIndex);
     }
     return;
   }
@@ -890,13 +899,13 @@ document.addEventListener('keydown', (event) => {
 const getTabElements = () => ({
     all: Array.from(document.querySelectorAll('.tab-radio')),
     current: document.querySelector('.tab-radio:checked'),
-    terminal: document.getElementById('tab-terminal')
+    terminal: document.getElementById('tab-0')
 });
 
 // Focus the appropriate element based on the active tab
 function focusAppropriateElement() {
     const { current } = getTabElements();
-    if (current.id === 'tab-terminal' || isConsoleVisible()) {
+    if (current.id === 'tab-0' || isConsoleVisible()) {
         // Focus command input when in terminal tab
         commandInput.focus();
     } else {
@@ -914,10 +923,25 @@ function focusAppropriateElement() {
     }
 }
 
-document.getElementById('tab-terminal').addEventListener("change", onTabChange);
+document.getElementById('tab-0').addEventListener("change", onTabChange);
 
 function onTabChange(ev) {
-  // console.log(ev);
+  const { all, current } = getTabElements();
+  const currentIndex = all.indexOf(current);
+  const panel = document.getElementById(`panel-${current.id}`);
+  // console.log(prevTabIdx, currentIndex, all.length, current.id, panel);
+  if (currentIndex === prevTabIdx) return;
+  prevTabIdx = currentIndex;
+  if (!panel) return;
+  historyPush();
+  history.commandHistory[0]["~"] = true;
+  history = panel.history;
+  if (!history.commandHistory.length || !history.commandHistory[0]["~"]) {
+    historyRecall(-1);
+  } else {
+    historyRecall(0);
+    history.commandHistory.shift();
+  }
 }
 
 // Tab navigation functions

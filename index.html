@@ -98,7 +98,7 @@
             /* z-index: 0; */
         }
 
-        .terminal-panel {
+        #terminal-panel {
             flex-grow: 1;
             /* display: flex; */
             flex-direction: column;
@@ -502,11 +502,11 @@
     <div class="tab-container">
         <div class="tab-controls" id="tab-controls">
             <!-- Terminal Tab (Always Present) -->
-            <input type="radio" name="tabs" id="tab-terminal" class="tab-radio" checked>
-            <label for="tab-terminal" class="tab-label">Console</label>
+            <input type="radio" name="tabs" id="tab-0" class="tab-radio" checked>
+            <label for="tab-0" class="tab-label">Console</label>
 
             <!-- Terminal Tab Content -->
-            <div class="tab-panel terminal-panel">
+            <div id="panel-tab-0" class="tab-panel">
                 <div id="terminal-container" class="terminal-container">
                     <div id="output" class="output-area"></div>
                     <div id="input-area" class="input-area">
