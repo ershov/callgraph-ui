@@ -97,9 +97,8 @@ function createWindow() {
     webPreferences: {
       // Security settings
       nodeIntegration: true,
-      contextIsolation: true,
-      sandbox: true,
-      preload: path.join(__dirname, 'preload.js')
+      contextIsolation: false,
+      sandbox: false
     }
   });
 

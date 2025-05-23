@@ -1,3 +1,6 @@
+// Import Electron modules directly
+const { ipcRenderer } = require('electron');
+
 // DOM Elements
 const outputElement = document.getElementById('output');
 const commandForm = document.getElementById('command-form');
@@ -53,7 +56,7 @@ function createBlobUrl(content, contentType = 'application/octet-stream') {
 // Initialize the terminal
 function initializeTerminal() {
   // Set up the output listener
-  window.callgraphTerminal.onCallgraphOutput((output) => {
+  ipcRenderer.on('callgraph-output', (event, output) => {
     if (Uint8Array.prototype.isPrototypeOf(output.data))
       output.data = Uint8Array_to_String(output.data);
     // Check if stderr contains status update format
@@ -82,19 +85,19 @@ function initializeTerminal() {
   });
 
   // Set up event handlers for context menu actions
-  window.callgraphTerminal.onShowCommand((command) => {
-    alert(`Command used to generate this content:\n${command}`);
+  ipcRenderer.on('show-command', (event, command) => {
+    alert(command);
   });
 
-  window.callgraphTerminal.onSaveContent(async ({ contentType, content, defaultPath }) => {
+  ipcRenderer.on('save-content', async (event, { contentType, content, defaultPath }) => {
     try {
-      const path = await window.callgraphTerminal.showSaveDialog({
+      const path = await showSaveDialog({
         defaultPath,
         filters: getFileFilters(contentType)
       });
 
       if (path) {
-        await window.callgraphTerminal.saveFile(path, content);
+        await saveFile(path, content);
         updateStatusBar(`Content saved to: ${path}`);
       }
     } catch (error) {
@@ -357,8 +360,8 @@ function createNewTab(output, title, command = '') {
   panel.addEventListener('contextmenu', (e) => {
     e.preventDefault();
 
-    // Show context menu with relevant data
-    window.callgraphTerminal.showContextMenu({
+  // Show context menu with relevant data
+    ipcRenderer.send('show-context-menu', {
       command: panel.dataset.command,
       contentType,
       content: output,
@@ -450,13 +453,9 @@ function handleCommandSubmit(event) {
 
   // Send command to main process
   try {
-    const success = window.callgraphTerminal.executeCommand(lastExecutedCommand);
-    if (success) {
-      historyPush();
-      updateStatusBar('Command sent');
-    } else {
-      updateStatus('Failed to send command', 'error');
-    }
+    ipcRenderer.send('execute-command', lastExecutedCommand);
+    historyPush();
+    updateStatusBar('Command sent');
   } catch (error) {
     console.error('Error executing command:', error);
     updateStatus('Error: ' + error.message, 'error');
@@ -572,24 +571,20 @@ function handleSignal(signalType) {
     terminateButton.disabled = true;
 
     // Send the signal
-    const success = window.callgraphTerminal.sendSignal(signalType);
+    ipcRenderer.send('send-signal', signalType);
 
     // Format friendly names for UI messages
     const signalName = signalType === 'SIGINT' ? 'Interrupt' : 'Terminate';
     const shortcutHint = signalType === 'SIGINT' ? '(Ctrl+C)' : '(Ctrl+T)';
 
-    if (success) {
-      // Visual feedback
-      updateStatus(`${signalName} signal sent ${shortcutHint}`, 'success');
+    // Visual feedback
+    updateStatus(`${signalName} signal sent ${shortcutHint}`, 'success');
 
-      // Add visual feedback in the terminal output
-      appendOutput({
-        type: 'system',
-        data: `\n[System: ${signalName} signal (${signalType}) sent to callgraph process]\n`
-      });
-    } else {
-      updateStatus(`Failed to send ${signalName.toLowerCase()} signal`, 'error');
-    }
+    // Add visual feedback in the terminal output
+    appendOutput({
+      type: 'system',
+      data: `\n[System: ${signalName} signal (${signalType}) sent to callgraph process]\n`
+    });
 
     // Re-enable the buttons after a short delay
     setTimeout(() => {
@@ -662,7 +657,7 @@ let totalMatches = 0;
 let currentMatch = 0;
 
 // Register for search results from main process
-window.callgraphTerminal.onFoundInPage((result) => {
+ipcRenderer.on('found-in-page-result', (event, result) => {
   // console.log(result);
 
   // if (result.finalUpdate) {
@@ -675,7 +670,7 @@ window.callgraphTerminal.onFoundInPage((result) => {
   }
 
   updateSearchCount();
-  // window.callgraphTerminal.stopFindInPage('keepSelection');
+  // stopFindInPage('keepSelection');
 });
 
 // Update search count display
@@ -689,11 +684,35 @@ function updateSearchCount() {
   }
 }
 
+// Helper functions for IPC
+function findInPage(searchText, options = {}) {
+  ipcRenderer.send('find-in-page', searchText, options);
+  return true;
+}
+
+function stopFindInPage(action = 'clearSelection') {
+  ipcRenderer.send('stop-find-in-page', action);
+  return true;
+}
+
+function showContextMenu(menuData) {
+  ipcRenderer.send('show-context-menu', menuData);
+  return true;
+}
+
+async function showSaveDialog(options) {
+  return ipcRenderer.invoke('show-save-dialog', options);
+}
+
+async function saveFile(filepath, content) {
+  return ipcRenderer.invoke('save-file', filepath, content);
+}
+
 // Start search with given text
 function startSearch(searchText, options = {}) {
   if (searchText.length < 2) {
     if (activeFindInPage) {
-      window.callgraphTerminal.stopFindInPage('keepSelection');
+      stopFindInPage('keepSelection');
     }
     [...document.querySelectorAll('.search-highlight')].forEach(e => e.classList.remove("search-highlight"));
     activeFindInPage = false;
@@ -706,10 +725,10 @@ function startSearch(searchText, options = {}) {
   if (!searchText.startsWith('/')) {
     [...document.querySelectorAll('.search-highlight')].forEach(e => e.classList.remove("search-highlight"));
     activeFindInPage = true;
-    window.callgraphTerminal.findInPage(searchText, options);
+    findInPage(searchText, options);
   } else {
     if (activeFindInPage) {
-      window.callgraphTerminal.stopFindInPage('keepSelection');
+      stopFindInPage('keepSelection');
       activeFindInPage = false;
     }
     currentMatch = totalMatches = 0;
@@ -743,7 +762,7 @@ function findNext() {
   }
 
   // Continue search in forward direction
-  !searchInput.value.startsWith("/") && window.callgraphTerminal.findInPage(searchInput.value, {
+  !searchInput.value.startsWith("/") && findInPage(searchInput.value, {
     findNext: true,
     forward: true
   });
@@ -757,7 +776,7 @@ function findPrevious() {
   }
 
   // Continue search in backward direction
-  !searchInput.value.startsWith("/") && window.callgraphTerminal.findInPage(searchInput.value, {
+  !searchInput.value.startsWith("/") && findInPage(searchInput.value, {
     findNext: true,
     forward: false
   });
@@ -765,7 +784,7 @@ function findPrevious() {
 
 // Close search and clear highlights
 function closeSearch() {
-  window.callgraphTerminal.stopFindInPage('keepSelection');
+  stopFindInPage('keepSelection');
   [...document.querySelectorAll('.search-highlight')].forEach(e => e.classList.remove("search-highlight"));
   activeFindInPage = false;
   totalMatches = 0;
