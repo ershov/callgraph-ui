@@ -258,7 +258,7 @@ function onCommandOutputCapture(output) {
   // Don't process empty output
   if (!output) return;
 
-  createNewTab(output, `${tabIdCounter + 1}`, lastExecutedCommand);
+  createNewTab(output, `${tabIdCounter + 1}`);
 }
 
 // Create a new tab with the given output and title
@@ -288,7 +288,9 @@ function getFileFilters(contentType) {
   }
 }
 
-function createNewTab(output, title, command = '') {
+////
+
+function createNewTab(output, title) {
   // Increment the global ID counter for unique IDs
   tabIdCounter++;
 
@@ -301,6 +303,7 @@ function createNewTab(output, title, command = '') {
   radio.name = 'tabs';
   radio.id = tabId;
   radio.className = 'tab-radio';
+  radio.addEventListener("change", onTabChange);
 
   // Create label with close button
   const label = document.createElement('label');
@@ -337,7 +340,8 @@ function createNewTab(output, title, command = '') {
   titleSpan.textContent = `${contentType} ${title}`;
 
   // Store the command that generated this content
-  panel.dataset.command = command;
+  panel.command = lastExecutedCommand;
+  panel.commandHistoryEntry = commandHistory[0];
 
   // Add context menu handling
   panel.addEventListener('contextmenu', (e) => {
@@ -345,7 +349,7 @@ function createNewTab(output, title, command = '') {
 
   // Show context menu with relevant data
     showContextMenu({
-      command: panel.dataset.command,
+      command: panel.command,
       contentType,
       content: output,
       tabId
@@ -361,6 +365,8 @@ function createNewTab(output, title, command = '') {
   // Switch to new tab
   radio.checked = true;
   focusAppropriateElement();
+
+  onTabChange({target: radio});
 }
 
 // Close a tab and remove its elements
@@ -379,6 +385,8 @@ function closeTab(tabId) {
   label.remove();
   panel.remove();
 }
+
+////////////
 
 function historyPush() {
   let entry = {"_": commandInput.value};
@@ -875,6 +883,8 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+////
+
 // Cache tab selection for better performance
 const getTabElements = () => ({
     all: Array.from(document.querySelectorAll('.tab-radio')),
@@ -903,6 +913,12 @@ function focusAppropriateElement() {
     }
 }
 
+document.getElementById('tab-terminal').addEventListener("change", onTabChange);
+
+function onTabChange(ev) {
+  // console.log(ev);
+}
+
 // Tab navigation functions
 function switchToNextTab() {
     const { all, current } = getTabElements();
@@ -912,6 +928,7 @@ function switchToNextTab() {
     const nextIndex = (currentIndex + 1) % all.length;
     all[nextIndex].checked = true;
     focusAppropriateElement();
+    onTabChange({target: all[nextIndex]});
 }
 
 function switchToPreviousTab() {
@@ -922,6 +939,7 @@ function switchToPreviousTab() {
     const prevIndex = (currentIndex - 1 + all.length) % all.length;
     all[prevIndex].checked = true;
     focusAppropriateElement();
+    onTabChange({target: all[prevIndex]});
 }
 
 function switchToTabByNumber(number) {
@@ -929,7 +947,8 @@ function switchToTabByNumber(number) {
     if (number <= all.length) {
         all[number - 1].checked = true;
         focusAppropriateElement();
-    }
+        onTabChange({target: all[number - 1]});
+      }
 }
 
 function closeCurrentTab() {
@@ -939,9 +958,8 @@ function closeCurrentTab() {
     }
     closeTab(current.id);
     focusAppropriateElement();
-}
-
-/////
+    onTabChange();
+  }
 
 document.addEventListener('keydown', ev => {
   if (ev.key === "`" /* && (ev.ctrlKey || ev.metaKey) */ ) {
