@@ -30,6 +30,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 900,
+    icon: path.join(__dirname, 'assets/icon.png'),
     webPreferences: {
       // Security settings
       nodeIntegration: true,

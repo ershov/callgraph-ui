@@ -19,7 +19,7 @@
     "electron",
     "ui"
   ],
-  "author": "Y. Ershov",
+  "author": "Yury Ershov",
   "license": "GPL",
   "description": "An interactive UI for visualizing call graph for WiredTiger",
   "devDependencies": {
@@ -30,7 +30,14 @@
     "appId": "com.callgraph.ui",
     "productName": "Callgraph UI",
     "mac": {
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icon.png"
+    },
+    "win": {
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "icon": "assets/icon.png"
     }
   }
 }

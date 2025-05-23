@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" version="1.1" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+ <rect width="1024" height="1024" fill="#2d3436" rx="128" ry="128"/>
+ <g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="48">
+  <!-- Main node (root) -->
+  <circle cx="512" cy="256" r="96" fill="#00b894"/>
+  
+  <!-- Child nodes -->
+  <circle cx="256" cy="512" r="96" fill="#00cec9"/>
+  <circle cx="768" cy="512" r="96" fill="#00cec9"/>
+  <circle cx="512" cy="768" r="96" fill="#00cec9"/>
+  
+  <!-- Connection lines with arrows -->
+  <path d="m464 336 -144 120" marker-end="url(#arrow)"/>
+  <path d="m560 336 144 120" marker-end="url(#arrow)"/>
+  <path d="m304 592 144 120" marker-end="url(#arrow)"/>
+  <path d="m720 592 -144 120" marker-end="url(#arrow)"/>
+ </g>
+ 
+ <!-- Arrow marker definition -->
+ <defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+   <path d="M0,0 L10,5 L0,10 L2,5 Z" fill="#fff"/>
+  </marker>
+ </defs>
+</svg>
+
