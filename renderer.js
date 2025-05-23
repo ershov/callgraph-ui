@@ -31,6 +31,9 @@ let commandOutputCapture = '';
 // Global tab counter for unique IDs
 let tabIdCounter = 0;
 
+// Store the last executed command
+let lastExecutedCommand = '';
+
 var nonEmptyPreset = false;
 
 function Uint8Array_to_String(uint8Array) {
@@ -78,6 +81,28 @@ function initializeTerminal() {
     appendOutput(output);
   });
 
+  // Set up event handlers for context menu actions
+  window.callgraphTerminal.onShowCommand((command) => {
+    alert(`Command used to generate this content:\n${command}`);
+  });
+
+  window.callgraphTerminal.onSaveContent(async ({ contentType, content, defaultPath }) => {
+    try {
+      const path = await window.callgraphTerminal.showSaveDialog({
+        defaultPath,
+        filters: getFileFilters(contentType)
+      });
+
+      if (path) {
+        await window.callgraphTerminal.saveFile(path, content);
+        updateStatusBar(`Content saved to: ${path}`);
+      }
+    } catch (error) {
+      console.error('Error saving content:', error);
+      updateStatusBar(`Error saving content: ${error.message}`);
+    }
+  });
+
   // Set up form submission
   commandForm.addEventListener('submit', handleCommandSubmit);
 
@@ -88,8 +113,7 @@ function initializeTerminal() {
   interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
   terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
 
-  commandPalette.addEventListener('input', generateCommandPreset); // TODO::
-  document.addEventListener('contextmenu', (event) => console.log(event)); // TODO::
+  commandPalette.addEventListener('input', generateCommandPreset);
 
   generateCommandPreset();
 
@@ -248,11 +272,37 @@ function onCommandOutputCapture(output) {
   // Don't process empty output
   if (!output) return;
 
-  createNewTab(output, `${tabIdCounter + 1}`);
+  createNewTab(output, `${tabIdCounter + 1}`, lastExecutedCommand);
 }
 
 // Create a new tab with the given output and title
-function createNewTab(output, title) {
+// Helper function to determine file filters based on content type
+function getFileFilters(contentType) {
+  switch (contentType) {
+    case 'PNG':
+      return [
+        { name: 'PNG Images', extensions: ['png'] },
+        { name: 'All Files', extensions: ['*'] }
+      ];
+    case 'SVG':
+      return [
+        { name: 'SVG Images', extensions: ['svg'] },
+        { name: 'All Files', extensions: ['*'] }
+      ];
+    case 'HTML':
+      return [
+        { name: 'HTML Files', extensions: ['html'] },
+        { name: 'All Files', extensions: ['*'] }
+      ];
+    default:
+      return [
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'All Files', extensions: ['*'] }
+      ];
+  }
+}
+
+function createNewTab(output, title, command = '') {
   // Increment the global ID counter for unique IDs
   tabIdCounter++;
 
@@ -299,6 +349,22 @@ function createNewTab(output, title) {
   // Add the content
   panel.appendChild(contentElement);
   titleSpan.textContent = `${contentType} ${title}`;
+
+  // Store the command that generated this content
+  panel.dataset.command = command;
+
+  // Add context menu handling
+  panel.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+
+    // Show context menu with relevant data
+    window.callgraphTerminal.showContextMenu({
+      command: panel.dataset.command,
+      contentType,
+      content: output,
+      tabId
+    });
+  });
 
   // Add to DOM
   const controls = document.getElementById('tab-controls');
@@ -370,21 +436,21 @@ function historyRecall(index) {
 function handleCommandSubmit(event) {
   event.preventDefault();
 
-  let command = commandInput.value.trim();
+  lastExecutedCommand = commandInput.value.trim();
 
   // Don't do anything if command is empty
-  if (command === "" && !nonEmptyPreset) {
+  if (lastExecutedCommand === "" && !nonEmptyPreset) {
     return;
   }
 
-  command = commandPreset.value + " " + command;
+  lastExecutedCommand = commandPreset.value + " " + lastExecutedCommand;
 
   // Display command with prompt
-  appendCommandToOutput(command);
+  appendCommandToOutput(lastExecutedCommand);
 
   // Send command to main process
   try {
-    const success = window.callgraphTerminal.executeCommand(command);
+    const success = window.callgraphTerminal.executeCommand(lastExecutedCommand);
     if (success) {
       historyPush();
       updateStatusBar('Command sent');

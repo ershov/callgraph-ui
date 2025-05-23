@@ -120,6 +120,69 @@ contextBridge.exposeInMainWorld('callgraphTerminal', {
     return () => {
       ipcRenderer.removeListener('found-in-page-result', callback);
     };
+  },
+
+  // Show context menu
+  showContextMenu: (menuData) => {
+    if (typeof menuData !== 'object') {
+      console.error('Invalid menu data: Must be an object');
+      return false;
+    }
+
+    ipcRenderer.send('show-context-menu', menuData);
+    return true;
+  },
+
+  // Show save dialog
+  showSaveDialog: (options) => {
+    return ipcRenderer.invoke('show-save-dialog', options);
+  },
+
+  // Save file
+  saveFile: (filepath, content) => {
+    return ipcRenderer.invoke('save-file', filepath, content);
+  },
+
+  // Register a callback for 'show-command' events
+  onShowCommand: (callback) => {
+    if (typeof callback !== 'function') {
+      console.error('Invalid callback: Must be a function');
+      return false;
+    }
+
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners('show-command');
+
+    // Register the new listener
+    ipcRenderer.on('show-command', (event, command) => {
+      callback(command);
+    });
+
+    // Return function to remove the listener
+    return () => {
+      ipcRenderer.removeListener('show-command', callback);
+    };
+  },
+
+  // Register a callback for 'save-content' events
+  onSaveContent: (callback) => {
+    if (typeof callback !== 'function') {
+      console.error('Invalid callback: Must be a function');
+      return false;
+    }
+
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners('save-content');
+
+    // Register the new listener
+    ipcRenderer.on('save-content', (event, data) => {
+      callback(data);
+    });
+
+    // Return function to remove the listener
+    return () => {
+      ipcRenderer.removeListener('save-content', callback);
+    };
   }
 });
 
