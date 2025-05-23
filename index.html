@@ -252,7 +252,6 @@
         }
 
         button {
-            color: white;
             border: none;
             padding: 8px 16px;
             text-align: center;
@@ -262,6 +261,10 @@
             border-radius: 4px;
             transition: background-color 0.3s;
             white-space: nowrap;
+        }
+
+        .command-btn {
+            color: white;
         }
 
         .submit-btn {
@@ -425,12 +428,65 @@
             align-self: end;
         }
 
+        #search-box {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            /* padding: 6px; */
+            z-index: 9999;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #search-input {
+            width: 200px;
+            padding: 4px 8px;
+            border: none;
+            /* border-radius: 3px; */
+            font-size: 13px;
+        }
+
+        .search-box-button {
+            padding: 4px;
+            border: none;
+            /* border-radius: 3px; */
+            /* background: #fff; */
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .search-highlight {
+            fill: #80F;
+            font-weight: bold;
+        }
+
+        #search-count {
+            width: 8ch;
+            text-align: center;
+            font-size: 12px;
+        }
+
         ellipse {
             fill: #fff; /* Make ellipses filled so that they can capture events. */
         }
     </style>
 </head>
 <body>
+    <!-- Search Box -->
+    <div id="search-box" style="display: none;">
+        <input type="text" id="search-input" placeholder="Find in page...">
+        <span id="search-count"></span>
+        <div style="display: flex; gap: 2px;">
+            <button id="search-prev"  class="search-box-button" title="Previous match (Shift+Cmd/Ctrl+G)">↑</button>
+            <button id="search-next"  class="search-box-button" title="Next match (Cmd/Ctrl+G)">↓</button>
+            <button id="search-close" class="search-box-button" title="Close (Esc)">×</button>
+        </div>
+    </div>
     <!-- Tab System -->
     <div class="tab-container">
         <div class="tab-controls" id="tab-controls">
@@ -485,10 +541,10 @@
                                 ></textarea>
                             </div>
                             <div class="form-controls">
-                                <button type="submit" id="submit-btn"    class="submit-btn"    data-tooltip="Send command (Enter)"         data-tooltip-left>Run Command</button>
+                                <button type="submit" id="submit-btn"    class="command-btn submit-btn"    data-tooltip="Send command (Enter)"         data-tooltip-left>Run Command</button>
                                 <div style="flex-grow: 1"></div>
-                                <button type="button" id="interrupt-btn" class="interrupt-btn" data-tooltip="Interrupt (Ctrl+C)" data-tooltip-left>Interrupt</button>
-                                <button type="button" id="terminate-btn" class="terminate-btn" data-tooltip="Reload Callgraph (Ctrl+T)"    data-tooltip-left>Reload</button>
+                                <button type="button" id="interrupt-btn" class="command-btn interrupt-btn" data-tooltip="Interrupt (Ctrl+C)" data-tooltip-left>Interrupt</button>
+                                <button type="button" id="terminate-btn" class="command-btn terminate-btn" data-tooltip="Reload Callgraph (Ctrl+T)"    data-tooltip-left>Reload</button>
                             </div>
                         </form>
                     </div>

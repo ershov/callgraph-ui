@@ -61,6 +61,65 @@ contextBridge.exposeInMainWorld('callgraphTerminal', {
     return () => {
       ipcRenderer.removeListener('callgraph-output', outputListener);
     };
+  },
+
+  // Find in page functionality
+  findInPage: (searchText, options = {}) => {
+    if (typeof searchText !== 'string') {
+      console.error('Invalid search text: Must be a string');
+      return false;
+    }
+
+    // Default options
+    const defaultOptions = {
+      forward: true,
+      findNext: true,
+      matchCase: false
+    };
+
+    // Merge with user options
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    // Send the find request to the main process
+    ipcRenderer.send('find-in-page', searchText, mergedOptions);
+    return true;
+  },
+
+  // Stop find in page
+  stopFindInPage: (action = 'clearSelection') => {
+    // Valid actions: 'clearSelection', 'keepSelection', 'activateSelection'
+    const validActions = ['clearSelection', 'keepSelection', 'activateSelection'];
+
+    if (!validActions.includes(action)) {
+      console.error('Invalid action:', action);
+      console.error('Supported actions are:', validActions.join(', '));
+      action = 'clearSelection';
+    }
+
+    // Send the stop find request to the main process
+    ipcRenderer.send('stop-find-in-page', action);
+    return true;
+  },
+
+  // Register for find results
+  onFoundInPage: (callback) => {
+    if (typeof callback !== 'function') {
+      console.error('Invalid callback: Must be a function');
+      return false;
+    }
+
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners('found-in-page-result');
+
+    // Register the new listener
+    ipcRenderer.on('found-in-page-result', (event, result) => {
+      callback(result);
+    });
+
+    // Return function to remove the listener
+    return () => {
+      ipcRenderer.removeListener('found-in-page-result', callback);
+    };
   }
 });
 

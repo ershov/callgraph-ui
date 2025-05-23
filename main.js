@@ -132,6 +132,22 @@ function initCallgraphProcess() {
 
 // Set up IPC handlers
 function setupIPC() {
+  // Find in page functionality
+  ipcMain.on('find-in-page', (event, searchText, options) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      // Start or continue a find operation
+      const requestId = mainWindow.webContents.findInPage(searchText, options);
+      // console.log(`Find in page request: "${searchText}", requestId: ${requestId}`);
+    }
+  });
+
+  ipcMain.on('stop-find-in-page', (event, action) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      // Stop the current find operation
+      mainWindow.webContents.stopFindInPage(action || 'clearSelection');
+      // console.log('Find in page stopped');
+    }
+  });
   // Handle command input from renderer
   ipcMain.on('execute-command', (event, command) => {
     if (callgraphProcess && callgraphProcess.stdin.writable) {
@@ -240,6 +256,14 @@ app.whenReady().then(() => {
   createWindow();
   initCallgraphProcess();
   setupIPC();
+
+  // Listen for found-in-page results
+  mainWindow.webContents.on('found-in-page', (event, result) => {
+    if (mainWindow && !mainWindow.isDestroyed() && result.finalUpdate) {
+      // Send search results back to renderer
+      mainWindow.webContents.send('found-in-page-result', result);
+    }
+  });
 
   // Re-create window on macOS when dock icon is clicked and no windows are open
   app.on('activate', () => {

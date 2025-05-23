@@ -10,6 +10,14 @@ const terminateButton = document.getElementById('terminate-btn');
 const statusBar = document.getElementById('status-bar');
 const statusBarContent = document.getElementById('status-bar-content');
 
+// Search elements
+const searchBox = document.getElementById('search-box');
+const searchInput = document.getElementById('search-input');
+const searchPrevBtn = document.getElementById('search-prev');
+const searchNextBtn = document.getElementById('search-next');
+const searchCloseBtn = document.getElementById('search-close');
+const searchCount = document.getElementById('search-count');
+
 // Command history functionality
 const commandHistory = [];
 let historyIndex = -1;
@@ -581,6 +589,189 @@ document.addEventListener('keydown', (event) => {
     closeCurrentTab();
   }
 }, true);
+
+// Search functionality
+let activeFindInPage = false;
+let totalMatches = 0;
+let currentMatch = 0;
+
+// Register for search results from main process
+window.callgraphTerminal.onFoundInPage((result) => {
+  // console.log(result);
+
+  // if (result.finalUpdate) {
+    totalMatches = result.matches;
+  // }
+
+  // Update current match if we have a selection
+  if (result.activeMatchOrdinal) {
+    currentMatch = result.activeMatchOrdinal;
+  }
+
+  updateSearchCount();
+  // window.callgraphTerminal.stopFindInPage('keepSelection');
+});
+
+// Update search count display
+function updateSearchCount() {
+  if (totalMatches === 0) {
+    searchCount.textContent = '';
+    searchCount.style.color = '#999';
+  } else {
+    searchCount.textContent = currentMatch ?`${currentMatch}/${totalMatches}` : "(regex)"; // `/re ${totalMatches}`;
+    searchCount.style.color = '#333';
+  }
+}
+
+// Start search with given text
+function startSearch(searchText, options = {}) {
+  if (searchText.length < 2) {
+    if (activeFindInPage) {
+      window.callgraphTerminal.stopFindInPage('keepSelection');
+    }
+    [...document.querySelectorAll('.search-highlight')].forEach(e => e.classList.remove("search-highlight"));
+    activeFindInPage = false;
+    totalMatches = 0;
+    currentMatch = 0;
+    updateSearchCount();
+    return;
+  }
+
+  if (!searchText.startsWith('/')) {
+    [...document.querySelectorAll('.search-highlight')].forEach(e => e.classList.remove("search-highlight"));
+    activeFindInPage = true;
+    window.callgraphTerminal.findInPage(searchText, options);
+  } else {
+    if (activeFindInPage) {
+      window.callgraphTerminal.stopFindInPage('keepSelection');
+      activeFindInPage = false;
+    }
+    currentMatch = totalMatches = 0;
+    let re;
+    try {
+      re = new RegExp(searchText.substr(1), "i");
+      searchInput.style.backgroundColor = "";
+    } catch {
+      searchInput.style.backgroundColor = "#FCC";
+    }
+    // TODO: handle tabs
+    for (let e of document.querySelectorAll('text')) {
+      if (re && re.test(e.textContent)) {
+        // e.style = "fill: #80F; font-weight: bold;";
+        e.classList.add("search-highlight");
+        ++totalMatches;
+      } else {
+        // e.style = "";
+        e.classList.remove("search-highlight");
+      }
+    }
+    updateSearchCount();
+  }
+}
+
+// Find next match
+function findNext() {
+  if (!activeFindInPage) {
+    startSearch(searchInput.value);
+    return;
+  }
+
+  // Continue search in forward direction
+  !searchInput.value.startsWith("/") && window.callgraphTerminal.findInPage(searchInput.value, {
+    findNext: true,
+    forward: true
+  });
+}
+
+// Find previous match
+function findPrevious() {
+  if (!activeFindInPage) {
+    startSearch(searchInput.value, { forward: false });
+    return;
+  }
+
+  // Continue search in backward direction
+  !searchInput.value.startsWith("/") && window.callgraphTerminal.findInPage(searchInput.value, {
+    findNext: true,
+    forward: false
+  });
+}
+
+// Close search and clear highlights
+function closeSearch() {
+  window.callgraphTerminal.stopFindInPage('keepSelection');
+  [...document.querySelectorAll('.search-highlight')].forEach(e => e.classList.remove("search-highlight"));
+  activeFindInPage = false;
+  totalMatches = 0;
+  currentMatch = 0;
+  updateSearchCount();
+
+  searchBox.style.display = 'none';
+
+  // Clear search input for next time
+  // searchInput.value = '';
+
+  // Return focus to appropriate element
+  focusAppropriateElement();
+}
+
+// Show search box
+function showSearchBox() {
+  searchBox.style.display = '';
+  searchInput.focus();
+  searchInput.select();
+}
+
+// Event Listeners
+searchInput.addEventListener('input', () => {
+  // Regular search is extremely slow and loses focus when typing.
+  searchInput.value.startsWith("/") && startSearch(searchInput.value);
+});
+
+searchInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    startSearch(searchInput.value);
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    closeSearch();
+  }
+}, true);
+
+searchNextBtn.addEventListener('click', findNext);
+searchPrevBtn.addEventListener('click', findPrevious);
+searchCloseBtn.addEventListener('click', closeSearch);
+
+// Global keyboard shortcuts for search
+document.addEventListener('keydown', (event) => {
+  // Open search with Ctrl+F or Cmd+F
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+    event.preventDefault();
+    showSearchBox();
+  }
+
+  // Next match with Ctrl+G or Cmd+G
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'g' && !event.shiftKey) {
+    event.preventDefault();
+    if (searchBox.style.display !== 'none') {
+      findNext();
+    }
+  }
+
+  // Previous match with Shift+Ctrl+G or Shift+Cmd+G
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'g' && event.shiftKey) {
+    event.preventDefault();
+    if (searchBox.style.display !== 'none') {
+      findPrevious();
+    }
+  }
+
+  // Close search with Escape
+  if (event.key === 'Escape' && searchBox.style.display !== 'none') {
+    event.preventDefault();
+    closeSearch();
+  }
+});
 
 // Cache tab selection for better performance
 const getTabElements = () => ({
