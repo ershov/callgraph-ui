@@ -28,17 +28,17 @@ const searchNextBtn = document.getElementById('search-next');
 const searchCloseBtn = document.getElementById('search-close');
 const searchCount = document.getElementById('search-count');
 
-let history = {
-  commandHistory: [],
-  historyIndex: -1,
-  lastExecutedCommand: '',
-};
+const isMac = window.navigator.platform.includes("Mac");
+
+let history;
 
 // Status update detection regex
 const statusMessageRegex = /\x1b\[K([^\r\n]*)[\r\n]/sg;
 const serverStatusMessageRegex = /\n<<<<<<<<<< (.*?) >>>>>>>>>>\n/sg;
 
 let commandOutputCapture = '';
+let openInNewTab = true; // Whether to open output in a new tab or not
+let openInNewTabCmd = true; // Captured state of openInNewTab upon command submission
 
 // Global tab counter for unique IDs
 let tabIdCounter = 0;
@@ -95,7 +95,11 @@ function initializeTerminal() {
   commandForm.addEventListener('submit', handleCommandSubmit);
 
   // Add keyboard shortcuts
-  commandForm.addEventListener('keydown', handleKeyDown);
+  commandForm.addEventListener('keydown', handleFormKeyDown);
+
+  document.addEventListener('keydown',   (ev) => openInNewTab = ev.altKey || (isMac ? ev.metaKey : ev.ctrlKey));
+  document.addEventListener('keyup',     (ev) => openInNewTab = ev.altKey || (isMac ? ev.metaKey : ev.ctrlKey));
+  document.addEventListener('mousedown', (ev) => openInNewTab = ev.altKey || (isMac ? ev.metaKey : ev.ctrlKey));
 
   // Set up signal buttons
   interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
@@ -103,7 +107,7 @@ function initializeTerminal() {
 
   commandPalette.addEventListener('input', generateCommandPreset);
 
-  terminalPanel.history = {
+  history = terminalPanel.history = {
     commandHistory: [],
     historyIndex: -1,
     lastExecutedCommand: '',
@@ -266,7 +270,18 @@ function onCommandOutputCapture(output) {
   // Don't process empty output
   if (!output) return;
 
-  createNewTab(output, `${tabIdCounter + 1}`);
+  const { current } = getTabElements();
+  if (openInNewTabCmd || current.id === 'tab-0') {
+    createNewTab(output, `${tabIdCounter + 1}`);
+  } else {
+    const contentType = detectContentType(output);
+    const contentElement = renderContent(output, contentType);
+
+    const panel = document.getElementById(`panel-${current.id}`);
+    while (panel.firstChild) panel.firstChild.remove();
+    panel.appendChild(contentElement);
+    // titleSpan.textContent = `${contentType} ${title}`;
+  }
 }
 
 // Create a new tab with the given output and title
@@ -454,9 +469,10 @@ function historyRecall(index) {
 
 // Handle form submission
 function handleCommandSubmit(event = null) {
-  event?.preventDefault();
+  event?.preventDefault && event?.preventDefault();
 
   history.lastExecutedCommand = commandInput.value.trim();
+  openInNewTabCmd = openInNewTab;
 
   // Don't do anything if command is empty
   if (history.lastExecutedCommand === "" && !nonEmptyPreset) {
@@ -480,8 +496,7 @@ function handleCommandSubmit(event = null) {
 }
 
 // Handle keyboard shortcuts
-function handleKeyDown(event) {
-  // if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { // Ctrl+Enter to submit
+function handleFormKeyDown(event) {
   if (event.key === 'Enter' && !event.shiftKey) { // no shift - submit
     event.preventDefault();
     commandForm.dispatchEvent(new Event('submit'));
@@ -734,36 +749,36 @@ function showContextMenu(menuData) {
       menuItems.push(
         {
           label: `\t${title}`, // 📝
-          click: () => clipboard.writeText(title),
+          click: (menuItem, win, ev) => clipboard.writeText(title),
         },
         {
           label: `🌴\tGrow`, // ＋🌴
-          click: () => {
+          click: (menuItem, win, ev) => {
             historyRecall(0);
             commandInput.value += ` -grow '${title}'`;
             // commandInput.dispatchEvent(new Event('input'));
             // commandForm.dispatchEvent(new Event('submit'));
-            handleCommandSubmit();
+            handleCommandSubmit(ev);
           },
         },
         {
           label: `✂️\tPrune`, // －✂
-          click: () => {
+          click: (menuItem, win, ev) => {
             historyRecall(0);
             commandInput.value += ` -prune '${title}'`;
             // commandInput.dispatchEvent(new Event('input'));
             // commandForm.dispatchEvent(new Event('submit'));
-            handleCommandSubmit();
+            handleCommandSubmit(ev);
           },
         },
         {
           label: `❌\tExclude`, // ｘ❌
-          click: () => {
+          click: (menuItem, win, ev) => {
             historyRecall(0);
             commandInput.value += ` -x '${title}'`;
             // commandInput.dispatchEvent(new Event('input'));
             // commandForm.dispatchEvent(new Event('submit'));
-            handleCommandSubmit();
+            handleCommandSubmit(ev);
           },
         },
       );
@@ -776,7 +791,7 @@ function showContextMenu(menuData) {
     if (title) {
       menuItems.push({
         label: `\t${title}`, // 📝
-        click: () => clipboard.writeText(title),
+        click: (menuItem, win, ev) => clipboard.writeText(title),
       });
     }
   }
@@ -787,11 +802,11 @@ function showContextMenu(menuData) {
     },
     {
       label: '\tShow Command',
-      click: () => alert(command)
+      click: (menuItem, win, ev) => alert(command)
     },
     {
       label: '💾\tSave As...', // 💾
-      async click() {
+      click: async (menuItem, win, ev) => {
         try {
           const { filePath } = await dialog.showSaveDialog({
             defaultPath: `output.${getDefaultExtension(contentType)}`,
