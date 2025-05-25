@@ -1,6 +1,7 @@
 // Import Electron modules directly
 const { ipcRenderer, clipboard } = require('electron');
 const { dialog, Menu } = require('@electron/remote');
+const { on } = require('events');
 const fs = require('fs').promises;
 
 // DOM Elements
@@ -41,7 +42,7 @@ let commandOutputCapture = '';
 
 // Global tab counter for unique IDs
 let tabIdCounter = 0;
-let prevTabIdx = 0;
+let tabLru = ['tab-0'];
 
 var nonEmptyPreset = false;
 
@@ -297,6 +298,13 @@ function getFileFilters(contentType) {
 
 ////
 
+function updateTabLru(tabId, reinsert = true) {
+  // Reinsert the tab at the beginning of the LRU list
+  let index = tabLru.indexOf(tabId);
+  if (index !== -1) tabLru.splice(index, 1);
+  if (reinsert) tabLru.unshift(tabId);
+}
+
 function createNewTab(output, title) {
   // Increment the global ID counter for unique IDs
   tabIdCounter++;
@@ -388,7 +396,14 @@ function closeTab(tabId) {
 
   // If this tab is active, switch to terminal tab
   if (radio.checked) {
-    document.getElementById('tab-0').checked = true;
+    // document.getElementById('tab-0').checked = true;
+    let nextActiveTab = tabLru.length > 1 ? tabLru[1] : null;
+    if (!nextActiveTab || nextActiveTab.id === tabId || !document.getElementById(nextActiveTab)) {
+      nextActiveTab = 'tab-0';
+    }
+    document.getElementById(nextActiveTab).checked = true;
+    updateTabLru(tabId, false);
+    onTabChange({target: document.getElementById(nextActiveTab)});
   }
 
   // Remove tab elements
@@ -988,11 +1003,10 @@ document.getElementById('tab-0').addEventListener("change", onTabChange);
 
 function onTabChange(ev) {
   const { all, current } = getTabElements();
-  const currentIndex = all.indexOf(current);
   const panel = document.getElementById(`panel-${current.id}`);
   // console.log(prevTabIdx, currentIndex, all.length, current.id, panel);
-  if (currentIndex === prevTabIdx) return;
-  prevTabIdx = currentIndex;
+  if (current.id === tabLru[0]) return;
+  updateTabLru(current.id, !!panel);
   if (!panel) return;
   historyPush();
   history.commandHistory[0]["~"] = true;
