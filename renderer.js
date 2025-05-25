@@ -1,5 +1,5 @@
 // Import Electron modules directly
-const { ipcRenderer } = require('electron');
+const { ipcRenderer, clipboard } = require('electron');
 const { dialog, Menu } = require('@electron/remote');
 const fs = require('fs').promises;
 
@@ -354,15 +354,16 @@ function createNewTab(output, title) {
   };
 
   // Add context menu handling
-  panel.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
+  panel.addEventListener('contextmenu', (ev) => {
+    ev.preventDefault();
 
   // Show context menu with relevant data
     showContextMenu({
       command: history.lastExecutedCommand,
       contentType,
       content: output,
-      tabId
+      tabId,
+      event: ev,
     });
   });
 
@@ -437,8 +438,8 @@ function historyRecall(index) {
 }
 
 // Handle form submission
-function handleCommandSubmit(event) {
-  event.preventDefault();
+function handleCommandSubmit(event = null) {
+  event?.preventDefault();
 
   history.lastExecutedCommand = commandInput.value.trim();
 
@@ -708,15 +709,73 @@ function getDefaultExtension(contentType) {
 
 // Enhanced context menu using @electron/remote
 function showContextMenu(menuData) {
-  const { command, contentType, content } = menuData;
+  const { command, contentType, content, event } = menuData;
+  let menuItems = [];
 
-  const menu = Menu.buildFromTemplate([
+  let e = event.target.closest("g.node");
+  if (e) {
+    let title = e.querySelector("title")?.textContent ?? "";
+    if (title) {
+      menuItems.push(
+        {
+          label: `\t${title}`, // 📝
+          click: () => clipboard.writeText(title),
+        },
+        {
+          label: `🌴\tGrow`, // ＋🌴
+          click: () => {
+            historyRecall(0);
+            commandInput.value += ` -grow '${title}'`;
+            // commandInput.dispatchEvent(new Event('input'));
+            // commandForm.dispatchEvent(new Event('submit'));
+            handleCommandSubmit();
+          },
+        },
+        {
+          label: `✂️\tPrune`, // －✂
+          click: () => {
+            historyRecall(0);
+            commandInput.value += ` -prune '${title}'`;
+            // commandInput.dispatchEvent(new Event('input'));
+            // commandForm.dispatchEvent(new Event('submit'));
+            handleCommandSubmit();
+          },
+        },
+        {
+          label: `❌\tExclude`, // ｘ❌
+          click: () => {
+            historyRecall(0);
+            commandInput.value += ` -x '${title}'`;
+            // commandInput.dispatchEvent(new Event('input'));
+            // commandForm.dispatchEvent(new Event('submit'));
+            handleCommandSubmit();
+          },
+        },
+      );
+    }
+  }
+
+  e = event.target.closest("g.edge");
+  if (e) {
+    let title = e.querySelector("title")?.textContent ?? "";
+    if (title) {
+      menuItems.push({
+        label: `\t${title}`, // 📝
+        click: () => clipboard.writeText(title),
+      });
+    }
+  }
+
+  menuItems.push(
     {
-      label: 'Show Command',
+      type: 'separator',
+    },
+    {
+      label: '\tShow Command',
       click: () => alert(command)
     },
     {
-      label: 'Save As...',
+      label: '💾\tSave As...', // 💾
       async click() {
         try {
           const { filePath } = await dialog.showSaveDialog({
@@ -738,7 +797,9 @@ function showContextMenu(menuData) {
         }
       }
     }
-  ]);
+  );
+
+  const menu = Menu.buildFromTemplate(menuItems);
 
   menu.popup();
 }
