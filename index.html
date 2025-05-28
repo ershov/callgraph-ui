@@ -488,6 +488,85 @@
         ellipse {
             fill: #fff; /* Make ellipses filled so that they can capture events. */
         }
+
+        /* Dialog Styles */
+        dialog {
+            padding: 0;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            width: 80%;
+            max-width: 600px;
+            background-color: #f5f5f5;
+            overflow: hidden;
+        }
+
+        dialog::backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .dialog-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0;
+            background-color: #e0e0e0;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .dialog-title {
+            font-weight: bold;
+            color: #333;
+            margin: 0 10px;
+        }
+
+        .dialog-close {
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+            background: none;
+            border: none;
+            padding: 4px 10px;
+        }
+
+        .dialog-close:hover {
+            color: #333;
+        }
+
+        .dialog-body {
+            padding: 2px;
+            overflow-y: auto;
+            max-height: 50vh;
+        }
+
+        .dialog-body pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'Menlo', monospace;
+            font-size: 14px;
+            padding: 8px;
+            background-color: #282c34;
+            color: #abb2bf;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .dialog-footer {
+            padding: 6px 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background-color: #e0e0e0;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -566,14 +645,6 @@
                 </div>
             </div>
 
-            <!-- Additional tabs will be added dynamically here using JavaScript -->
-            <!-- Example structure for dynamically added tabs:
-            <input type="radio" name="tabs" id="tab-1" class="tab-radio">
-            <label for="tab-1" class="tab-label">Command 1</label>
-            <div class="tab-panel">
-                <div id="output-1" class="captured-output">Command 1 output</div>
-            </div>
-            -->
         </div>
     </div>
 

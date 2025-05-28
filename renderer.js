@@ -802,7 +802,7 @@ function showContextMenu(menuData) {
     },
     {
       label: '\tShow Command',
-      click: (menuItem, win, ev) => alert(command)
+      click: (menuItem, win, ev) => showCommandDialog(command)
     },
     {
       label: '💾\tSave As...', // 💾
@@ -1186,3 +1186,56 @@ document.addEventListener("wheel", ev => {
     zoomBy(delta * 0.001);
   }
 }, {passive: false});
+
+// Shows a command in a dialog
+function showCommandDialog(command) {
+  // Remove any existing dialog
+  let dialog = document.querySelector('dialog#command-dialog');
+  if (dialog) {
+    dialog.remove();
+  }
+
+  // Create dialog element
+  dialog = document.createElement('dialog');
+  dialog.id = 'command-dialog';
+
+  // Create dialog content
+  dialog.innerHTML = `
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <span class="dialog-title">Command</span>
+        <button class="dialog-close" id="dialog-close-x">&times;</button>
+      </div>
+      <div class="dialog-body">
+        <pre>${command}</pre>
+      </div>
+      <div class="dialog-footer">
+        <button id="dialog-copy" class="command-btn submit-btn" autofocus>Copy to clipboard</button>
+        <button id="dialog-close">Close</button>
+      </div>
+    </div>
+  `;
+
+  // Add dialog to document
+  document.body.appendChild(dialog);
+
+  // Show the dialog
+  dialog.showModal();
+
+  // Set up event handlers
+  document.getElementById('dialog-close-x').addEventListener('click', () => dialog.close());
+  document.getElementById('dialog-close').addEventListener('click', () => dialog.close());
+
+  // Copy command to clipboard
+  document.getElementById('dialog-copy').addEventListener('click', () => {
+    clipboard.writeText(command);
+    updateStatusBar('Command copied to clipboard');
+  });
+
+  // Close on Escape key is handled automatically by the dialog element
+
+  // Remove dialog when closed
+  dialog.addEventListener('close', () => {
+    dialog.remove();
+  });
+}
