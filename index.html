@@ -33,6 +33,7 @@
         }
 
         .tab-controls {
+            app-region: drag; /* Allow dragging of the window */
             display: flex;
             flex-wrap: wrap;
             background-color: #e0e0e0;
@@ -65,6 +66,7 @@
             /* gap: 8px; */
             overflow: hidden;
             display: flex;
+            z-index: 1;
         }
 
         .tab-label span:first-child {
@@ -400,6 +402,7 @@
 
         /* Status bar styles */
         .status-bar {
+            app-region: drag; /* Allow dragging of the window */
             height: 20px;
             background-color: #ddd;
             border-top: 1px solid #ccc;
@@ -501,6 +504,7 @@
     <!-- Tab System -->
     <div class="tab-container">
         <div class="tab-controls" id="tab-controls">
+            <span class="tab-label" style="border-radius: 0; width: 50px;"></span>
             <!-- Terminal Tab (Always Present) -->
             <input type="radio" name="tabs" id="tab-0" class="tab-radio" checked>
             <label for="tab-0" class="tab-label">Console</label>

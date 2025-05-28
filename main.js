@@ -35,6 +35,8 @@ function createWindow() {
     width: 1200,
     height: 900,
     icon: path.join(__dirname, 'assets/icon.png'),
+    titleBarStyle: 'hidden',
+    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
     webPreferences: {
       // Security settings
       nodeIntegration: true,
