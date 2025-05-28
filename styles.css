@@ -1,0 +1,556 @@
+/* Main body styles */
+body {
+    font-family: 'Menlo', monospace;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0 0 20px 0; /* Bottom padding to prevent content from being hidden behind status bar */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+/* Tab System Using Radio Buttons */
+.tab-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.tab-controls {
+    app-region: drag; /* Allow dragging of the window */
+    display: flex;
+    flex-wrap: wrap;
+    background-color: #e0e0e0;
+    border-bottom: 1px solid #ccc;
+    padding: 0;
+    overflow: hidden;
+    /* white-space: nowrap; */
+    gap: 1px;
+}
+
+.tab-radio {
+    display: none; /* Hide actual radio buttons */
+}
+
+.tab-label {
+    order: 1;
+    padding: 6px 12px;
+    background-color: #d0d0d0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    user-select: none;
+    max-width: 200px;
+    display: inline-block;
+    align-items: center;
+    /* gap: 8px; */
+    overflow: hidden;
+    display: flex;
+    z-index: 1;
+}
+
+.tab-label span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.tab-radio:checked + .tab-label {
+    background-color: #fff;
+    color: #333;
+    position: relative;
+    /* z-index: 1; */
+    border-bottom: 1px solid #fff; /* Hide bottom border when active */
+    margin-bottom: -1px; /* Compensate for the hidden border */
+}
+
+.tab-panel {
+    display: none;
+    order: 999;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    width: 100%;
+
+    height: calc(100% - 29px - 20px);
+    position: fixed;
+    top: 29px;
+    /* z-index: 0; */
+}
+
+#terminal-panel {
+    flex-grow: 1;
+    /* display: flex; */
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.floating-panel {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    left: 40px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    background-color: #aaa !important;
+}
+
+.tab-radio:checked + .tab-label + .tab-panel {
+    display: flex;
+}
+
+.captured-output {
+    flex-grow: 1;
+    overflow: auto;
+    background-color: #282c34;
+    color: #abb2bf;
+    padding: 10px;
+    font-family: 'Menlo', monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 10px;
+    padding: 0 20px;
+}
+
+.terminal-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    background-color: #fff;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.output-area {
+    flex-grow: 1;
+    background-color: #282c34;
+    color: #abb2bf;
+    padding: 10px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Menlo', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100px;
+}
+
+.output-area .stderr {
+    color: #e06c75;
+}
+
+.output-area .system {
+    color: #98c379;
+    font-style: italic;
+}
+
+/* Content container styles */
+.content-container {
+    flex: 1;
+    overflow: auto;
+    /* padding: 10px; */
+    padding: 0;
+}
+
+.image-container {
+    /* display: flex;
+    justify-content: center; */
+    align-items: center;
+    /* background: #fff; */
+    overflow: scroll;
+    margin: auto;
+}
+
+.image-container img,
+.image-container svg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.html-container {
+    height: 100%;
+}
+
+.html-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.text-container {
+    font-family: 'Menlo', monospace;
+    white-space: pre-wrap;
+    background-color: #282c34;
+    color: #abb2bf;
+}
+
+.input-area {
+    display: flex;
+    flex-direction: column;
+    background-color: #f5f5f5;
+    border-top: 1px solid #ccc;
+}
+
+.command-form {
+    display: flex;
+    margin: 6px;
+    /* flex-wrap: wrap; */
+    gap: 6px;
+}
+
+.command-textarea {
+    resize: vertical;
+    min-height: 45px;
+    padding: 8px;
+    font-family: 'Menlo', monospace;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    flex-grow: 1;
+    /* width: calc(100% - 16px); */
+    width: -webkit-fill-available;
+}
+
+.code-input {
+    padding: 0 3px;
+    font-family: 'Menlo', monospace;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.command-preset {
+    padding: 0 8px;
+    width: -webkit-fill-available;
+    flex-grow: 1;
+    color: #008;
+}
+
+.form-controls {
+    display: flex;
+    flex-direction: column;
+    /* justify-content: space-between; */
+    /* align-items: center; */
+    width: 128px;
+    height: auto;
+    gap: 1px;
+}
+
+button {
+    border: none;
+    padding: 8px 16px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+}
+
+.command-btn {
+    color: white;
+}
+
+.submit-btn {
+    background-color: #4CAF50;
+}
+
+.submit-btn:hover {
+    background-color: #45a049;
+}
+
+.submit-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.interrupt-btn {
+    background-color: #e74c3c;
+}
+
+.interrupt-btn:hover {
+    background-color: #c0392b;
+}
+
+.interrupt-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.terminate-btn {
+    background-color: #9b2c2c;
+}
+
+.terminate-btn:hover {
+    background-color: #7c1e1e;
+}
+
+.terminate-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Tooltip styles */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+}
+
+[data-tooltip-bottom]:hover::after {
+    margin-bottom: 0;
+    bottom: unset;
+    margin-top: 5px;
+    top: 100%;
+}
+
+[data-tooltip-left]:hover::after {
+    margin-bottom: unset;
+    margin-right: 5px;
+    bottom: unset;
+    left: unset;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+[data-tooltip-right]:hover::after {
+    margin-bottom: unset;
+    margin-left: 5px;
+    bottom: unset;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.error {
+    color: #e06c75;
+}
+
+.success {
+    color: #98c379;
+}
+
+/* Add a subtle prompt to the beginning of each command */
+.command-prompt {
+    color: #61afef;
+    font-weight: bold;
+}
+
+/* Tab close button */
+.tab-close {
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.6;
+    display: inline-block;
+    height: 16px;
+    width: 16px;
+    text-align: center;
+    line-height: 16px;
+    position: relative;
+    left: 5px;
+}
+
+.tab-close:hover {
+    opacity: 1;
+    background: rgba(0,0,0,0.1);
+    border-radius: 50%;
+}
+
+/* Status bar styles */
+.status-bar {
+    app-region: drag; /* Allow dragging of the window */
+    height: 20px;
+    background-color: #ddd;
+    border-top: 1px solid #ccc;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #555;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.status-bar-content {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.command-palette {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+}
+
+.command-palette > span {
+    /* display: inline-block; */
+    display: flex;
+    flex-direction: column;
+}
+
+.command-palette > span > span {
+    display: inline-block;
+    align-self: end;
+}
+
+#search-box {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    /* padding: 6px; */
+    z-index: 9999;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#search-input {
+    width: 200px;
+    padding: 4px 8px;
+    border: none;
+    /* border-radius: 3px; */
+    font-size: 13px;
+}
+
+.search-box-button {
+    padding: 4px;
+    border: none;
+    /* border-radius: 3px; */
+    /* background: #fff; */
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.search-highlight {
+    fill: #80F;
+    font-weight: bold;
+}
+
+#search-count {
+    width: 8ch;
+    text-align: center;
+    font-size: 12px;
+}
+
+ellipse {
+    fill: #fff; /* Make ellipses filled so that they can capture events. */
+}
+
+/* Dialog Styles */
+dialog {
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    width: 80%;
+    max-width: 600px;
+    background-color: #f5f5f5;
+    overflow: hidden;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    background-color: #e0e0e0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.dialog-title {
+    font-weight: bold;
+    color: #333;
+    margin: 0 10px;
+}
+
+.dialog-close {
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #666;
+    background: none;
+    border: none;
+    padding: 4px 10px;
+}
+
+.dialog-close:hover {
+    color: #333;
+}
+
+.dialog-body {
+    padding: 2px;
+    overflow-y: auto;
+    max-height: 50vh;
+}
+
+.dialog-body pre {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: 'Menlo', monospace;
+    font-size: 14px;
+    padding: 8px;
+    background-color: #282c34;
+    color: #abb2bf;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.dialog-footer {
+    padding: 6px 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background-color: #e0e0e0;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
