@@ -30,6 +30,8 @@ const searchCount = document.getElementById('search-count');
 
 const isMac = window.navigator.platform.includes("Mac");
 
+const defaultCommand = "-x copy -x /tier -x /_stat -x /curstat ";
+
 let history;
 
 // Status update detection regex
@@ -119,6 +121,7 @@ function initializeTerminal() {
   // submitButton.disabled = true;
 
   // Focus the input field
+  commandInput.value = defaultCommand;
   commandInput.focus();
 }
 
@@ -431,7 +434,7 @@ function closeTab(tabId) {
 
 function historyPush() {
   let entry = {"_": commandInput.value};
-  commandInput.value = '';
+  commandInput.value = defaultCommand;
   history.historyIndex = -1;
   for (const [contribRet, defval, name, func] of commandOptions) {
     const e = document.getElementById(name);
@@ -451,7 +454,7 @@ function historyPush() {
 function historyRecall(index) {
   if (index >= history.commandHistory.length) return;
   const entry = history.commandHistory[index];
-  commandInput.value = index >= 0 ? entry["_"] : "";
+  commandInput.value = index >= 0 ? entry["_"] : defaultCommand;
   for (const [contribRet, defval, name, func] of commandOptions) {
     const el = document.getElementById(name);
     if (el) {
