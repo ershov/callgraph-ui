@@ -189,6 +189,7 @@ h1 {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+    /* margin: 50%; */
 }
 
 .html-container {

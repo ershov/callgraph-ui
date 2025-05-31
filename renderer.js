@@ -1143,7 +1143,21 @@ function generateCommandPreset(ev) {
 var mouseX = 600;
 var mouseY = 450;
 
-document.addEventListener("mousemove", ev => [mouseX, mouseY] = [ev.clientX, ev.clientY-29], {passive: true});
+var moving = false;
+document.addEventListener("mousedown", ev => (ev.altKey || (!isMac && ev.ctrlKey) || ev.metaKey || ev.shiftKey) && (moving = true), {passive: true});
+document.addEventListener("mouseup", ev => moving = false, {passive: true});
+document.addEventListener("mousemove", ev => {
+  [mouseX, mouseY] = [ev.clientX, ev.clientY-30];
+
+  if (!moving) return;
+
+  let { current } = getTabElements();
+  if (current) {
+    let panel = document.getElementById("panel-" + current.id);
+    let scrollElem = panel?.querySelector('.content-container');
+    moving && scrollElem.scrollBy(-ev.movementX, -ev.movementY);
+  }
+}, {passive: true});
 
 function zoomBy(delta) {
   if (delta == 0) return;
