@@ -482,8 +482,33 @@ button {
     font-size: 12px;
 }
 
+/* SVG */
+
 ellipse {
     fill: #fff; /* Make ellipses filled so that they can capture events. */
+}
+
+g.edge.hi,
+g.edge.hi path {
+    stroke: #FF0000FF;
+    stroke-opacity: 1;
+    z-index: 2;
+}
+
+g.edge.hi polygon,
+g.hi text,
+g text.hi {
+    stroke: #FF0000FF;
+    fill: #FF0000FF;
+    stroke-opacity: 1;
+    z-index: 2;
+}
+
+g.edge:hover,
+g.edge:hover path,
+g.edge:hover polygon {
+    stroke: #0000FFFF !important;
+    stroke-opacity: 1;
 }
 
 /* Dialog Styles */
@@ -543,7 +568,7 @@ dialog::backdrop {
     max-height: 50vh;
 }
 
-.dialog-body pre {
+.dialog-body textarea {
     margin: 0;
     white-space: pre-wrap;
     font-family: 'Menlo', monospace;
@@ -552,7 +577,9 @@ dialog::backdrop {
     background-color: #282c34;
     color: #abb2bf;
     border-radius: 4px;
-    overflow-x: auto;
+    overflow: auto;
+    width: 100%;
+    height: 120px;
 }
 
 .dialog-footer {

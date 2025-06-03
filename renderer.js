@@ -102,6 +102,7 @@ function initializeTerminal() {
   document.addEventListener('keydown',   (ev) => openInNewTab = ev.altKey || (isMac ? ev.metaKey : ev.ctrlKey));
   document.addEventListener('keyup',     (ev) => openInNewTab = ev.altKey || (isMac ? ev.metaKey : ev.ctrlKey));
   document.addEventListener('mousedown', (ev) => openInNewTab = ev.altKey || (isMac ? ev.metaKey : ev.ctrlKey));
+  document.addEventListener("click",     ev => ev.target.closest("g.edge,g.node > text")?.classList?.toggle("hi"));
 
   // Set up signal buttons
   interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
@@ -871,11 +872,10 @@ function startSearch(searchText, options = {}) {
     // TODO: handle tabs
     for (let e of document.querySelectorAll('text')) {
       if (re && re.test(e.textContent)) {
-        // e.style = "fill: #80F; font-weight: bold;";
+        // TODO: use <tspan fill="#f00"> / <tspan class=hi> for highlighting in SVG and <mark class=hi> for HTML
         e.classList.add("search-highlight");
         ++totalMatches;
       } else {
-        // e.style = "";
         e.classList.remove("search-highlight");
       }
     }
@@ -1224,7 +1224,7 @@ function showCommandDialog(command) {
         <button class="dialog-close" id="dialog-close-x">&times;</button>
       </div>
       <div class="dialog-body">
-        <pre>${command}</pre>
+        <textarea readonly>${command}</textarea>
       </div>
       <div class="dialog-footer">
         <button id="dialog-copy" class="command-btn submit-btn" autofocus>Copy to clipboard</button>
