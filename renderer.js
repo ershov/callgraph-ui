@@ -808,7 +808,7 @@ function showContextMenu(menuData) {
       type: 'separator',
     },
     {
-      label: '\tShow Command',
+      label: 'ⓘ\tShow Command',
       click: (menuItem, win, ev) => showCommandDialog(command)
     },
     {
@@ -1116,7 +1116,7 @@ const commandOptions = [
   [0, null,  "command-depth",         val => `-d ${val}`],
   [0, null,  "command-timeout",       val => `--timeout ${val}`],
   [0, "lr",  "command-dir",           val => `--dir ${val}`],
-  [0, "svg", "command-output-format", val => val === "text" ? "" : val === "text-indent" ? `--indents` : `-${val}`],
+  [0, "svg", "command-output-format", val => val === "text" ? "-text -nohlends" : val === "text-indent" ? "--indents -nohlends" : `-${val}`],
   [1, "",    "command-from",          val => `-f '${val}'`],
   [1, "",    "command-to",            val => `-t '${val}'`],
   [0, "",    "command-exclude",       val => `-x '${val}'`],

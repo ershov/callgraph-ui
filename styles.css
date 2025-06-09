@@ -564,22 +564,24 @@ dialog::backdrop {
 
 .dialog-body {
     padding: 2px;
-    overflow-y: auto;
+    overflow: auto;
     max-height: 50vh;
 }
 
 .dialog-body textarea {
     margin: 0;
+    padding: 0;
     white-space: pre-wrap;
     font-family: 'Menlo', monospace;
     font-size: 14px;
-    padding: 8px;
     background-color: #282c34;
     color: #abb2bf;
     border-radius: 4px;
+    border: none;
     overflow: auto;
     width: 100%;
     height: 120px;
+    resize: vertical;
 }
 
 .dialog-footer {
