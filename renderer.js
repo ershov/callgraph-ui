@@ -114,6 +114,7 @@ function initializeTerminal() {
     commandHistory: [],
     historyIndex: -1,
     lastExecutedCommand: '',
+    contentCommand: '',
   };
 
   generateCommandPreset();
@@ -284,6 +285,7 @@ function onCommandOutputCapture(output) {
     const panel = document.getElementById(`panel-${current.id}`);
     while (panel.firstChild) panel.firstChild.remove();
     panel.appendChild(contentElement);
+    panel.history.contentCommand = history.lastExecutedCommand;
     // titleSpan.textContent = `${contentType} ${title}`;
   }
 }
@@ -378,6 +380,7 @@ function createNewTab(output, title) {
     commandHistory: [...history.commandHistory],
     historyIndex: -1,
     lastExecutedCommand: history.lastExecutedCommand,
+    contentCommand: history.lastExecutedCommand,
   };
 
   // Add context menu handling
@@ -386,7 +389,7 @@ function createNewTab(output, title) {
 
   // Show context menu with relevant data
     showContextMenu({
-      command: history.lastExecutedCommand,
+      command: history.contentCommand,
       contentType,
       content: output,
       tabId,
