@@ -63,18 +63,29 @@ function createWindow() {
   });
 }
 
+let server_started = false;
+
 // Initialize callgraph process
 function initCallgraphProcess() {
   try {
     // Spawn a persistent callgraph session
-    // Use login shell to ensure consistent environment
-    callgraphProcess = spawn('callgraph', ['-server', '-hlends'], {
-      shell: false, // Don't spawn within another shell
-      env: process.env // Inherit current environment variables
-    });
+    callgraphProcess = spawn('callgraph',
+      [
+        '-server',
+        '-hlends',
+        ...(process.env.SRC_HOME !== undefined ? ["--home", process.env.SRC_HOME] : [])
+      ],
+      {
+        shell: false, // Don't spawn within another shell
+        env: process.env // Inherit current environment variables
+      }
+    );
 
     // Handle stdout data
     callgraphProcess.stdout.on('data', (data) => {
+      if (!server_started && data.includes("\n<<<<<<<<<< Server start")) {
+        server_started = true;
+      }
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('callgraph-output', {
           type: 'stdout',
@@ -96,6 +107,10 @@ function initCallgraphProcess() {
     // Handle process exit
     callgraphProcess.on('exit', (code, signal) => {
       console.log(`Callgraph process exited with code ${code} and signal ${signal}`);
+      if (!server_started) {
+        // app.quit(); // Don't quit to show error message in the UI.
+        return;
+      }
 
       // Restart callgraph process if it crashes unexpectedly
       if (mainWindow && !mainWindow.isDestroyed() && !app.isQuitting) {

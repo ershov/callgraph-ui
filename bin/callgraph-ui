@@ -20,6 +20,7 @@ if (args.includes('--help') || args.includes('-h')) {
     callgraph-ui [options]
 
   Options:
+    --home {DIR}    Set the source home directory
     --help, -h      Show this help message
     --version, -v   Show version information
   `);
@@ -34,6 +35,17 @@ if (args.includes('--version') || args.includes('-v')) {
     process.exit(0);
   } catch (error) {
     console.error('Error reading version information:', error.message);
+    process.exit(1);
+  }
+}
+
+if (args.includes('--home')) {
+  const homeIndex = args.indexOf('--home');
+  if (homeIndex + 1 < args.length) {
+    // Set environment variable SRC_HOME for home directory
+    process.env.SRC_HOME = args[homeIndex + 1];
+  } else {
+    console.error('Error: --home option requires a directory argument');
     process.exit(1);
   }
 }
