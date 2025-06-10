@@ -44,6 +44,7 @@ if (args.includes('--home')) {
   if (homeIndex + 1 < args.length) {
     // Set environment variable SRC_HOME for home directory
     process.env.SRC_HOME = args[homeIndex + 1];
+    args.splice(homeIndex, 2); // Remove the --home option and its argument
   } else {
     console.error('Error: --home option requires a directory argument');
     process.exit(1);
@@ -59,7 +60,7 @@ if (!fs.existsSync(mainJsPath)) {
 
 // Launch the Electron app
 try {
-  const electronProcess = spawn(electron, [appDir], {
+  const electronProcess = spawn(electron, [appDir, ...args], {
     stdio: 'inherit'
   });
 

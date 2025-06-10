@@ -33,6 +33,7 @@ const isMac = window.navigator.platform.includes("Mac");
 const defaultCommand = "-x copy -x /tier -x /_stat -x /curstat ";
 
 let history;
+let process_argv = [];
 
 // Status update detection regex
 const statusMessageRegex = /\x1b\[K([^\r\n]*)[\r\n]/sg;
@@ -61,6 +62,12 @@ function createBlobUrl(content, contentType = 'application/octet-stream') {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
   return url;
 }
+
+ipcRenderer.on('process-argv', (event, data) => {
+  process_argv = data.slice(2);
+  if (process_argv.length > 0) console.log("Command line arguments:", process_argv);
+});
+
 
 // Initialize the terminal
 function initializeTerminal() {
@@ -151,6 +158,14 @@ function onServerReady(message) {
     data: `[Server ready: ${message}]\n`
   });
   submitButton.disabled = false;
+  if (process_argv.length > 0) {
+    switchToTabByNumber(1);
+    commandInput.value = process_argv.shift();
+    console.log("Executing from command line:", commandInput.value);
+    // commandInput.dispatchEvent(new Event('input'));
+    // commandForm.dispatchEvent(new Event('submit'));
+    handleCommandSubmit();
+  }
 }
 
 function onServerBusy(message) {

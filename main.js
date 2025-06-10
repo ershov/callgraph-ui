@@ -250,6 +250,10 @@ function setupIPC() {
       }
     }
   });
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('process-argv', process.argv);
+  }
 }
 
 // Handle termination signals (SIGINT, SIGTERM)
