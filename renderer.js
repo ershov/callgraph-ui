@@ -162,6 +162,9 @@ function onServerReady(message) {
     switchToTabByNumber(1);
     commandInput.value = process_argv.shift();
     console.log("Executing from command line:", commandInput.value);
+    if (commandInput.value.startsWith(commandPreset.value)) {
+      commandInput.value = commandInput.value.substr(commandPreset.value.length).trim();
+    }
     // commandInput.dispatchEvent(new Event('input'));
     // commandForm.dispatchEvent(new Event('submit'));
     handleCommandSubmit();
@@ -501,7 +504,9 @@ function handleCommandSubmit(event = null) {
     return;
   }
 
-  history.lastExecutedCommand = commandPreset.value + " " + history.lastExecutedCommand;
+  if (!history.lastExecutedCommand.startsWith(commandPreset.value)) {
+    history.lastExecutedCommand = commandPreset.value + " " + history.lastExecutedCommand;
+  }
 
   // Display command with prompt
   appendCommandToOutput(history.lastExecutedCommand);
@@ -823,11 +828,11 @@ function showContextMenu(menuData) {
       type: 'separator',
     },
     {
-      label: 'ⓘ\tShow Command',
+      label: '＞\tShow Command',
       click: (menuItem, win, ev) => showCommandDialog(command)
     },
     {
-      label: '💾\tSave As...', // 💾
+      label: `💾\tSave ${contentType} as...`, // 💾
       click: async (menuItem, win, ev) => {
         try {
           const { filePath } = await dialog.showSaveDialog({
@@ -848,7 +853,16 @@ function showContextMenu(menuData) {
           updateStatusBar(`Error saving content: ${error.message}`);
         }
       }
-    }
+    },
+    {
+      type: 'separator',
+    },
+    {
+      label: '📲\tSave Session',
+      click: (menuItem, win, ev) => showCommandDialog("callgraph-ui " +
+        [...document.querySelectorAll(`[id^="panel-"]`)].map(e => e.history.contentCommand).filter(x => x).map(x => `'${x}'`).join(" ")
+      ),
+    },
   );
 
   const menu = Menu.buildFromTemplate(menuItems);
