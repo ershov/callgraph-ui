@@ -328,15 +328,8 @@ function onCommandOutputCapture(output) {
     createNewTab(output, `${tabIdCounter + 1}`);
   } else {
     const panel = document.getElementById(`panel-${current.id}`);
-    const contentType = detectContentType(output);
-    const contentElement = renderContent(output, contentType);
-    panel.contentType = contentType;
-    panel.content = output;
-
-    while (panel.firstChild) panel.firstChild.remove();
-    panel.appendChild(contentElement);
+    populateTabContent(panel, output);
     panel.history.contentCommand = history.lastExecutedCommand;
-    // titleSpan.textContent = `${contentType} ${title}`;
   }
 }
 
@@ -376,13 +369,8 @@ function updateTabLru(tabId, reinsert = true) {
   if (reinsert) tabLru.unshift(tabId);
 }
 
-function createNewTab(output, title) {
-  // Increment the global ID counter for unique IDs
-  tabIdCounter++;
-
-  // Create tab elements with unique IDs
-  const tabId = `tab-${tabIdCounter}`;
-
+// Create a tab panel with UI elements
+function createTabPanel(tabId) {
   // Create radio button
   const radio = document.createElement('input');
   radio.type = 'radio';
@@ -398,7 +386,7 @@ function createNewTab(output, title) {
 
   // Add title span
   const titleSpan = document.createElement('span');
-  titleSpan.textContent = title;
+  titleSpan.textContent = tabId.replace('tab-', '');
   label.appendChild(titleSpan);
 
   // Add close button
@@ -417,15 +405,15 @@ function createNewTab(output, title) {
   panel.className = 'tab-panel';
   panel.id = `panel-${tabId}`;
 
-  // Detect content type
-  const contentType = detectContentType(output);
-  const contentElement = renderContent(output, contentType);
-  panel.contentType = contentType;
-  panel.content = output;
+  // Add to DOM
+  const controls = document.getElementById('tab-controls');
+  controls.appendChild(radio);
+  controls.appendChild(label);
+  controls.appendChild(panel);
 
-  // Add the content
-  panel.appendChild(contentElement);
-  titleSpan.textContent = `${contentType} ${title}`;
+  // Switch to new tab
+  radio.checked = true;
+  focusAppropriateElement();
 
   // Store the command that generated this content
   panel.history = {
@@ -439,7 +427,7 @@ function createNewTab(output, title) {
   panel.addEventListener('contextmenu', (ev) => {
     ev.preventDefault();
 
-  // Show context menu with relevant data
+    // Show context menu with relevant data
     showContextMenu({
       command: history.contentCommand,
       contentType: panel.contentType,
@@ -449,17 +437,48 @@ function createNewTab(output, title) {
     });
   });
 
-  // Add to DOM
-  const controls = document.getElementById('tab-controls');
-  controls.appendChild(radio);
-  controls.appendChild(label);
-  controls.appendChild(panel);
+  return panel;
+}
 
-  // Switch to new tab
-  radio.checked = true;
-  focusAppropriateElement();
+// Populate a panel with content
+function populateTabContent(panel, output, title=null) {
+  // Detect content type
+  const contentType = detectContentType(output);
+  const contentElement = renderContent(output, contentType);
+  panel.contentType = contentType;
+  panel.content = output;
 
-  onTabChange({target: radio});
+  // Add the content
+  while (panel.firstChild) panel.firstChild.remove();
+  panel.appendChild(contentElement);
+
+  if (title) {
+    // Update the title
+    const tabId = panel.id.replace('panel-', '');
+    const titleSpan = document.querySelector(`label[for="${tabId}"] > span`);
+    if (titleSpan) {
+      titleSpan.textContent = `${contentType} ${title}`;
+    }
+  }
+
+  return panel;
+}
+
+// Create a new tab with the given output and title
+function createNewTab(output, title) {
+  // Increment the global ID counter for unique IDs
+  tabIdCounter++;
+
+  // Create tab elements with unique IDs
+  const tabId = `tab-${tabIdCounter}`;
+
+  // Create the panel UI
+  const panel = createTabPanel(tabId);
+
+  // Populate the panel with content
+  populateTabContent(panel, output, title);
+
+  onTabChange({target: document.getElementById(tabId)});
 }
 
 // Close a tab and remove its elements
