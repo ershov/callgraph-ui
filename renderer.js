@@ -327,10 +327,12 @@ function onCommandOutputCapture(output) {
   if (openInNewTabCmd || current.id === 'tab-0') {
     createNewTab(output, `${tabIdCounter + 1}`);
   } else {
+    const panel = document.getElementById(`panel-${current.id}`);
     const contentType = detectContentType(output);
     const contentElement = renderContent(output, contentType);
+    panel.contentType = contentType;
+    panel.content = output;
 
-    const panel = document.getElementById(`panel-${current.id}`);
     while (panel.firstChild) panel.firstChild.remove();
     panel.appendChild(contentElement);
     panel.history.contentCommand = history.lastExecutedCommand;
@@ -418,6 +420,8 @@ function createNewTab(output, title) {
   // Detect content type
   const contentType = detectContentType(output);
   const contentElement = renderContent(output, contentType);
+  panel.contentType = contentType;
+  panel.content = output;
 
   // Add the content
   panel.appendChild(contentElement);
@@ -438,8 +442,8 @@ function createNewTab(output, title) {
   // Show context menu with relevant data
     showContextMenu({
       command: history.contentCommand,
-      contentType,
-      content: output,
+      contentType: panel.contentType,
+      content: panel.content,
       tabId,
       event: ev,
     });
