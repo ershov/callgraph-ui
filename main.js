@@ -41,7 +41,8 @@ function createWindow() {
       // Security settings
       nodeIntegration: true,
       contextIsolation: false,
-      sandbox: false
+      sandbox: false,
+      disableBlinkFeatures: 'SmoothScrolling'
     }
   });
 
