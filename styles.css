@@ -216,7 +216,7 @@ h1 {
     border-top: 1px solid #ccc;
 }
 
-.command-form {
+.commandForm {
     display: flex;
     margin: 6px;
     /* flex-wrap: wrap; */
@@ -244,11 +244,23 @@ h1 {
     border-radius: 4px;
 }
 
-.command-preset {
+.commandPreset {
     padding: 0 8px;
     width: -webkit-fill-available;
     flex-grow: 1;
     color: #008;
+}
+
+.string-inputs input {
+    width: 340px;
+}
+
+.num-inputs input {
+    width: 33px;
+}
+
+.choice-inputs select {
+    width: 7ch;
 }
 
 .form-controls {
@@ -422,19 +434,19 @@ button {
     width: 100%;
 }
 
-.command-palette {
+.commandPalette {
     display: flex;
     width: 100%;
     gap: 8px;
 }
 
-.command-palette > span {
+.commandPalette > span {
     /* display: inline-block; */
     display: flex;
     flex-direction: column;
 }
 
-.command-palette > span > span {
+.commandPalette > span > span {
     display: inline-block;
     align-self: end;
 }

@@ -36,24 +36,25 @@
             <!-- Terminal Tab Content -->
             <div id="panel-tab-0" class="tab-panel">
                 <div id="terminal-container" class="terminal-container">
-                    <div id="output" class="output-area"></div>
+                    <div id="outputArea" class="output-area"></div>
                     <div id="input-area" class="input-area">
-                        <form id="command-form" class="command-form">
+                        <form id="commandForm" class="commandForm">
                             <div style="flex-grow: 1">
-                                <div class="command-palette" id="command-palette">
-                                    <span>
-                                        <span data-tooltip="-f"        data-tooltip-bottom>From    <input accesskey=f type="text" id="command-from"    class="code-input command-from"    list="funcs-list" placeholder="func names or /re" size=40></span>
-                                        <span data-tooltip="-t"        data-tooltip-bottom>To      <input accesskey=t type="text" id="command-to"      class="code-input command-to"      list="funcs-list" placeholder="func names or /re" size=40></span>
-                                        <span data-tooltip="-x"        data-tooltip-bottom>Exclude <input accesskey=x type="text" id="command-exclude" class="code-input command-exclude" list="funcs-list" placeholder="func names or /re" size=40></span>
+                                <div class="commandPalette" id="commandPalette">
+                                    <span class="string-inputs">
+                                        <span data-tooltip="-f"        data-tooltip-bottom>From    <input accesskey=f type="text" id="commandFrom"    class="code-input commandFrom"    list="funcs-list" placeholder="func names or /re"></span>
+                                        <span data-tooltip="-t"        data-tooltip-bottom>To      <input accesskey=t type="text" id="commandTo"      class="code-input commandTo"      list="funcs-list" placeholder="func names or /re"></span>
+                                        <span data-tooltip="-x"        data-tooltip-bottom>Exclude <input accesskey=x type="text" id="commandExclude" class="code-input commandExclude" list="funcs-list" placeholder="func names or /re"></span>
+                                        <span data-tooltip="--prune"   data-tooltip-bottom>Prune   <input accesskey=p type="text" id="commandPrune"   class="code-input commandPrune"   list="funcs-list" placeholder="func names or /re"></span>
                                     </span>
 
-                                    <span>
-                                        <span data-tooltip="-d"        data-tooltip-bottom>Depth   <input accesskey=d type="text" id="command-depth"   class="code-input command-depth"   placeholder="n/a" size=2 value=""></span>
-                                        <span data-tooltip="--timeout" data-tooltip-bottom>Timeout <input             type="text" id="command-timeout" class="code-input command-timeout" placeholder="n/a" size=2 value="5"></span>
+                                    <span class="num-inputs">
+                                        <span data-tooltip="-d"        data-tooltip-bottom>Depth   <input accesskey=d type="number" id="commandDepth"   class="code-input commandDepth"   placeholder="n/a" min="0" value=""></span>
+                                        <span data-tooltip="--timeout" data-tooltip-bottom>Timeout <input             type="number" id="commandTimeout" class="code-input commandTimeout" placeholder="n/a" min="0" value="5"></span>
                                     </span>
 
-                                    <span>
-                                        <span data-tooltip="Output format" data-tooltip-bottom>Output <select accesskey=o id="command-output-format" class="command-output-format" style="width: 7ch">
+                                    <span class="choice-inputs">
+                                        <span data-tooltip="Output format" data-tooltip-bottom>Output <select accesskey=o id="commandOutputFormat" class="commandOutputFormat">
                                             <option value="list">List</option>
                                             <option value="text">Text</option>
                                             <option value="text-indent">Indented Text</option>
@@ -63,7 +64,7 @@
                                             <option value="dotdot">Graphviz/w layout</option>
                                             <option value="svg-html">SVG-HTML</option>
                                         </select></span>
-                                        <span data-tooltip="Graph direction" data-tooltip-bottom>Dir <select id="command-dir" class="command-dir" style="width: 7ch">
+                                        <span data-tooltip="Graph direction" data-tooltip-bottom>Dir <select id="commandDir" class="commandDir">
                                             <option value="lr" selected>LR</option>
                                             <option value="tb">TB</option>
                                             <option value="rl">RL</option>
@@ -71,9 +72,9 @@
                                         </select></span>
                                     </span>
                                 </div>
-                                <input type="text" id="command-preset" class="code-input command-preset" readonly>
+                                <input type="text" id="commandPreset" class="code-input commandPreset" readonly>
                                 <textarea
-                                    id="command-input"
+                                    id="commandInput"
                                     class="command-textarea"
                                     placeholder="additional options"
                                     autofocus

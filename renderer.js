@@ -5,11 +5,11 @@ const { on } = require('events');
 const fs = require('fs').promises;
 
 // DOM Elements
-const outputElement = document.getElementById('output');
-const commandForm = document.getElementById('command-form');
-const commandInput = document.getElementById('command-input');
-const commandPalette = document.getElementById('command-palette');
-const commandPreset = document.getElementById('command-preset');
+// const outputArea = document.getElementById('outputArea');
+// const commandForm = document.getElementById('commandForm');
+// const commandInput = document.getElementById('commandInput');
+// const commandPalette = document.getElementById('commandPalette');
+// const commandPreset = document.getElementById('commandPreset');
 const submitButton = document.getElementById('submit-btn');
 const interruptButton = document.getElementById('interrupt-btn');
 const terminateButton = document.getElementById('terminate-btn');
@@ -579,6 +579,8 @@ function handleCommandSubmit(event = null) {
   history.lastExecutedCommand = commandInput.value.trim();
   openInNewTabCmd = openInNewTab;
 
+  generateCommandPreset();
+
   // Don't do anything if command is empty
   if (history.lastExecutedCommand === "" && !nonEmptyPreset) {
     return;
@@ -669,7 +671,7 @@ function appendCommandToOutput(command) {
   const commandText = document.createTextNode(command);
   commandElement.appendChild(commandText);
 
-  outputElement.appendChild(commandElement);
+  outputArea.appendChild(commandElement);
 
   // Scroll to bottom
   scrollToBottom();
@@ -680,13 +682,13 @@ function appendOutput(output) {
   const outputLine = document.createElement('div');
   outputLine.className = output.type;
   outputLine.textContent = output.data;
-  outputElement.appendChild(outputLine);
+  outputArea.appendChild(outputLine);
   scrollToBottom();
 }
 
 // Scroll output area to bottom
 function scrollToBottom() {
-  outputElement.scrollTop = outputElement.scrollHeight;
+  outputArea.scrollTop = outputArea.scrollHeight;
 }
 
 // Update status message
@@ -879,7 +881,8 @@ function showContextMenu(menuData) {
           label: `✂️\tPrune`, // －✂
           click: (menuItem, win, ev) => {
             historyRecall(0);
-            commandInput.value += ` -prune '${title}'`;
+            // commandInput.value += ` -prune '${title}'`;
+            commandPrune.value = (commandPrune.value + ` ${title}`).trim();
             // commandInput.dispatchEvent(new Event('input'));
             // commandForm.dispatchEvent(new Event('submit'));
             handleCommandSubmit(ev);
@@ -889,7 +892,8 @@ function showContextMenu(menuData) {
           label: `❌\tExclude`, // ｘ❌
           click: (menuItem, win, ev) => {
             historyRecall(0);
-            commandInput.value += ` -x '${title}'`;
+            // commandInput.value += ` -x '${title}'`;
+            commandExclude.value = (commandExclude.value + ` ${title}`).trim();
             // commandInput.dispatchEvent(new Event('input'));
             // commandForm.dispatchEvent(new Event('submit'));
             handleCommandSubmit(ev);
@@ -1229,21 +1233,22 @@ function toggleConsole() {
 /////
 
 const commandOptions = [
-  [0, null,  "command-depth",         val => `-d ${val}`],
-  [0, null,  "command-timeout",       val => `--timeout ${val}`],
-  [0, "lr",  "command-dir",           val => `--dir ${val}`],
-  [0, "svg", "command-output-format", val => val === "text" ? "-text -nohlends" : val === "text-indent" ? "--indents -nohlends" : `-${val}`],
-  [1, "",    "command-from",          val => val.trim().split(/\s+/).map(x => `-f '${x}'`).join(" ")],
-  [1, "",    "command-to",            val => val.trim().split(/\s+/).map(x => `-t '${x}'`).join(" ")],
-  [0, "",    "command-exclude",       val => val.trim().split(/\s+/).map(x => `-x '${x}'`).join(" ")],
+  [0, null,  "commandDepth",        val => `-d ${val}`],
+  [0, null,  "commandTimeout",      val => `--timeout ${val}`],
+  [0, "lr",  "commandDir",          val => `--dir ${val}`],
+  [0, "svg", "commandOutputFormat", val => val === "text" ? "-text -nohlends" : val === "text-indent" ? "--indents -nohlends" : `-${val}`],
+  [1, "",    "commandFrom",         val => val.trim().split(/\s+/).map(x => `-f '${x}'`).join(" ")],
+  [1, "",    "commandTo",           val => val.trim().split(/\s+/).map(x => `-t '${x}'`).join(" ")],
+  [0, "",    "commandExclude",      val => val.trim().split(/\s+/).map(x => `-x '${x}'`).join(" ")],
+  [0, "",    "commandPrune",        val => val.trim().split(/\s+/).map(x => `-prune '${x}'`).join(" ")],
 ];
 
 function generateCommandPreset(ev) {
   let nonempty = false;
   let val = ["--continue"];
-  if (ev && ev.inputType === "insertText" && (ev.target.id == "command-from" || ev.target.id == "command-to")) {
-    const [from, to, depth] = [document.getElementById("command-from"), document.getElementById("command-to"), document.getElementById("command-depth")];
-    const [target, other] = ev.target.id == "command-from" ? [from, to] : [to, from];
+  if (ev && ev.inputType === "insertText" && (ev.target.id == "commandFrom" || ev.target.id == "commandTo")) {
+    const [from, to, depth] = [commandFrom, commandTo, commandDepth];
+    const [target, other] = ev.target.id == "commandFrom" ? [from, to] : [to, from];
     if (target.value.length === 1 && other.value.length > 0 && !depth.value) {
       depth.value = "4";
     }
