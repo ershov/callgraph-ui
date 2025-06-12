@@ -42,9 +42,9 @@
                             <div style="flex-grow: 1">
                                 <div class="command-palette" id="command-palette">
                                     <span>
-                                        <span data-tooltip="-f"        data-tooltip-bottom>From    <input accesskey=f type="text" id="command-from"    class="code-input command-from"    placeholder="func names or /re" size=40></span>
-                                        <span data-tooltip="-t"        data-tooltip-bottom>To      <input accesskey=t type="text" id="command-to"      class="code-input command-to"      placeholder="func names or /re" size=40></span>
-                                        <span data-tooltip="-x"        data-tooltip-bottom>Exclude <input accesskey=x type="text" id="command-exclude" class="code-input command-exclude" placeholder="func names or /re" size=40></span>
+                                        <span data-tooltip="-f"        data-tooltip-bottom>From    <input accesskey=f type="text" id="command-from"    class="code-input command-from"    list="funcs-list" placeholder="func names or /re" size=40></span>
+                                        <span data-tooltip="-t"        data-tooltip-bottom>To      <input accesskey=t type="text" id="command-to"      class="code-input command-to"      list="funcs-list" placeholder="func names or /re" size=40></span>
+                                        <span data-tooltip="-x"        data-tooltip-bottom>Exclude <input accesskey=x type="text" id="command-exclude" class="code-input command-exclude" list="funcs-list" placeholder="func names or /re" size=40></span>
                                     </span>
 
                                     <span>
@@ -83,7 +83,7 @@
                                 <button type="submit" id="submit-btn"    class="command-btn submit-btn"    data-tooltip="Enter: Send command; ^Enter: New Tab"         data-tooltip-left>Run Command</button>
                                 <div style="flex-grow: 1"></div>
                                 <button type="button" id="interrupt-btn" class="command-btn interrupt-btn" data-tooltip="Interrupt (Ctrl+C)" data-tooltip-left>Interrupt</button>
-                                <button type="button" id="terminate-btn" class="command-btn terminate-btn" data-tooltip="Reload Callgraph (Ctrl+Shift+R)"    data-tooltip-left>Reload</button>
+                                <button type="button" id="terminate-btn" class="command-btn terminate-btn" data-tooltip="Reload Callgraph (Ctrl+Shift+R)"    data-tooltip-left>Rescan</button>
                             </div>
                         </form>
                     </div>

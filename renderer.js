@@ -34,6 +34,9 @@ const defaultCommand = "-x copy -x /tier -x /_stat -x /curstat ";
 
 let history;
 let process_argv = [];
+let pendingCommands = [];
+
+let allFuncs = [];
 
 // Status update detection regex
 const statusMessageRegex = /\x1b\[K([^\r\n]*)[\r\n]/sg;
@@ -75,6 +78,20 @@ function formEnable(state) {
 
 // Initialize the terminal
 function initializeTerminal() {
+  pendingCommands = [
+    {
+      cmd: ()=>{
+        appendOutput({ type: 'system', data: `Getting list of functions for auto-complete...\n` });
+        return "-x copy /. -list"
+      },
+      res: res => {
+        allFuncs = res.trim().split(/\n/);
+        appendOutput({ type: 'system', data: `... got ${allFuncs.length} functions.\n` });
+        document.body.insertAdjacentHTML("beforeEnd", `<datalist id="funcs-list">${allFuncs.map(x => `<option value="${x}"></option>`).join("")}</datalist>`); // TODO: Why there's no scroll?
+      }
+    },
+  ];
+
   // Set up the output listener
   ipcRenderer.on('callgraph-output', (event, output) => {
     if (Uint8Array.prototype.isPrototypeOf(output.data))
@@ -161,6 +178,10 @@ function onServerReady(message) {
     type: 'system',
     data: `[Server ready: ${message}]\n`
   });
+  if (pendingCommands.length > 0) {
+    ipcRenderer.send('execute-command', pendingCommands[0].cmd());
+    return;
+  }
   formEnable(true);
   if (process_argv.length > 0) {
     switchToTabByNumber(1);
@@ -294,6 +315,11 @@ function renderText(content) {
 }
 
 function onCommandOutputCapture(output) {
+  if (pendingCommands.length > 0) {
+    pendingCommands.shift().res(output);
+    return;
+  }
+
   // Don't process empty output
   if (!output) return;
 
