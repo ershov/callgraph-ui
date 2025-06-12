@@ -78,20 +78,6 @@ function formEnable(state) {
 
 // Initialize the terminal
 function initializeTerminal() {
-  pendingCommands = [
-    {
-      cmd: ()=>{
-        appendOutput({ type: 'system', data: `Getting list of functions for auto-complete...\n` });
-        return "-x copy /. -list"
-      },
-      res: res => {
-        allFuncs = res.trim().split(/\n/);
-        appendOutput({ type: 'system', data: `... got ${allFuncs.length} functions.\n` });
-        document.body.insertAdjacentHTML("beforeEnd", `<datalist id="funcs-list">${allFuncs.map(x => `<option value="${x}"></option>`).join("")}</datalist>`); // TODO: Why there's no scroll?
-      }
-    },
-  ];
-
   // Set up the output listener
   ipcRenderer.on('callgraph-output', (event, output) => {
     if (Uint8Array.prototype.isPrototypeOf(output.data))
@@ -171,6 +157,20 @@ function onServerStart(message) {
     data: `[Server started: ${message}]\n`
   });
   updateStatusBar("Ready");
+
+  pendingCommands = [
+    {
+      cmd: ()=>{
+        appendOutput({ type: 'system', data: `Getting list of functions for auto-complete...\n` });
+        return "-x copy /. -list"
+      },
+      res: res => {
+        allFuncs = res.trim().split(/\n/);
+        appendOutput({ type: 'system', data: `... got ${allFuncs.length} functions.\n` });
+        document.body.insertAdjacentHTML("beforeEnd", `<datalist id="funcs-list">${allFuncs.map(x => `<option value="${x}"></option>`).join("")}</datalist>`); // TODO: Why there's no scroll?
+      }
+    },
+  ];
 }
 
 function onServerReady(message) {
@@ -242,6 +242,11 @@ function detectContentType(content) {
     return 'HTML';
   }
 
+  // Check for inline HTML
+  if (content.trim().startsWith('<') && content.trim().endsWith('>')) {
+    return 'inline-HTML';
+  }
+
   // Fallback to plain text
   return 'Text';
 }
@@ -255,6 +260,8 @@ function renderContent(content, contentType) {
       return renderSVG(content);
     case 'HTML':
       return renderHTML(content);
+    case 'inline-HTML':
+      return renderInlineHTML(content);
     default:
       return renderText(content);
   }
@@ -303,6 +310,17 @@ function renderHTML(content) {
   return container;
 }
 
+// Render inline HTML
+function renderInlineHTML(content) {
+  const container = document.createElement('div');
+  // container.className = 'content-container text-container';
+  container.className = 'content-container inline-html-container';
+  container.innerHTML = content;
+  container.tabIndex = -1; // Make it focusable
+
+  return container;
+}
+
 // Render plain text
 function renderText(content) {
   const container = document.createElement('div');
@@ -325,7 +343,11 @@ function onCommandOutputCapture(output) {
 
   const { current } = getTabElements();
   if (openInNewTabCmd || current.id === 'tab-0') {
-    createNewTab(output, `${tabIdCounter + 1}`);
+    let title = history.lastExecutedCommand;
+    if (title.length > 10) {
+      title = "…"+title.substr(-10);
+    }
+    createNewTab(output, title);
   } else {
     const panel = document.getElementById(`panel-${current.id}`);
     populateTabContent(panel, output);
@@ -457,7 +479,7 @@ function populateTabContent(panel, output, title=null) {
     const tabId = panel.id.replace('panel-', '');
     const titleSpan = document.querySelector(`label[for="${tabId}"] > span`);
     if (titleSpan) {
-      titleSpan.textContent = `${contentType} ${title}`;
+      titleSpan.textContent = `${title}`;
     }
   }
 
@@ -503,6 +525,11 @@ function closeTab(tabId) {
   radio.remove();
   label.remove();
   panel.remove();
+}
+
+function createNewExploreTab() {
+  createNewTab(`<div></div>`, "Explore");
+  showConsole();
 }
 
 ////////////
@@ -730,6 +757,13 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'r' && (event.ctrlKey || event.metaKey) && event.shiftKey) {
     event.preventDefault();
     handleSignal('SIGTERM');
+    return;
+  }
+
+  // Ctrl+Shift+R to terminate process (SIGTERM)
+  if (event.key === 't' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    createNewExploreTab();
     return;
   }
 
