@@ -263,6 +263,16 @@ h1 {
     width: 7ch;
 }
 
+.divider {
+    flex-grow: 1;
+}
+
+.button-inputs button {
+    color: #000;
+    background: #ccc;
+    margin: 1px;
+}
+
 .form-controls {
     display: flex;
     flex-direction: column;

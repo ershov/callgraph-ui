@@ -122,6 +122,9 @@ function initializeTerminal() {
   interruptButton.addEventListener('click', () => handleSignal('SIGINT'));
   terminateButton.addEventListener('click', () => handleSignal('SIGTERM'));
 
+  btnShowInModules.addEventListener('click', ev => showIn(ev, "-mod"));
+  btnShowInFiles.addEventListener('click', ev => showIn(ev));
+
   commandPalette.addEventListener('input', generateCommandPreset);
 
   history = terminalPanel.history = {
@@ -129,6 +132,7 @@ function initializeTerminal() {
     historyIndex: -1,
     lastExecutedCommand: '',
     contentCommand: '',
+    contentCommandHistoryEntry: null,
   };
 
   generateCommandPreset();
@@ -352,6 +356,7 @@ function onCommandOutputCapture(output) {
     const panel = document.getElementById(`panel-${current.id}`);
     populateTabContent(panel, output);
     panel.history.contentCommand = history.lastExecutedCommand;
+    panel.history.contentCommandHistoryEntry = history.commandHistory[0];
   }
 }
 
@@ -443,6 +448,7 @@ function createTabPanel(tabId) {
     historyIndex: -1,
     lastExecutedCommand: history.lastExecutedCommand,
     contentCommand: history.lastExecutedCommand,
+    contentCommandHistoryEntry: history.commandHistory[0],
   };
 
   // Add context menu handling
@@ -517,8 +523,8 @@ function closeTab(tabId) {
       nextActiveTab = 'tab-0';
     }
     document.getElementById(nextActiveTab).checked = true;
-    updateTabLru(tabId, false);
     onTabChange({target: document.getElementById(nextActiveTab)});
+    updateTabLru(tabId, false);
   }
 
   // Remove tab elements
@@ -553,14 +559,17 @@ function historyPush() {
   }
 }
 
-function historyRecall(index) {
-  if (index >= history.commandHistory.length) return;
-  const entry = history.commandHistory[index];
-  commandInput.value = index >= 0 ? entry["_"] : defaultCommand;
+function historyRecall(index, entry = null) {
+  if (!entry) {
+    if (index >= history.commandHistory.length) return;
+    if (index >= 0) entry = history.commandHistory[index];
+  }
+  history.historyIndex = index;
+  commandInput.value = entry ? entry["_"] : defaultCommand;
   for (const [contribRet, defval, name, func] of commandOptions) {
     const el = document.getElementById(name);
     if (el) {
-      if (index >= 0) {
+      if (entry) {
         el.value = entry[name];
       } else if (defval !== null) {
         el.value = defval;
@@ -572,23 +581,30 @@ function historyRecall(index) {
   generateCommandPreset();
 }
 
+function isEmptyCommand() {
+  return (commandInput.value.trim() === "" || commandInput.value.trim() === defaultCommand.trim()) && !nonEmptyPreset;
+}
+
+function getCombinedCommand() {
+  generateCommandPreset();
+  if (isEmptyCommand()) return "";
+
+  let ret = commandInput.value.trim();
+  if (!ret.startsWith(commandPreset.value)) {
+    ret = commandPreset.value + " " + ret;
+  }
+  return ret.trim();
+}
+
 // Handle form submission
 function handleCommandSubmit(event = null) {
   event?.preventDefault && event?.preventDefault();
 
-  history.lastExecutedCommand = commandInput.value.trim();
+  let cmd = getCombinedCommand();
+  if (!cmd) return; // Don't do anything if command is empty
+
+  history.lastExecutedCommand = cmd;
   openInNewTabCmd = openInNewTab;
-
-  generateCommandPreset();
-
-  // Don't do anything if command is empty
-  if (history.lastExecutedCommand === "" && !nonEmptyPreset) {
-    return;
-  }
-
-  if (!history.lastExecutedCommand.startsWith(commandPreset.value)) {
-    history.lastExecutedCommand = commandPreset.value + " " + history.lastExecutedCommand;
-  }
 
   // Display command with prompt
   appendCommandToOutput(history.lastExecutedCommand);
@@ -870,7 +886,7 @@ function showContextMenu(menuData) {
         {
           label: `🌴\tGrow`, // ＋🌴
           click: (menuItem, win, ev) => {
-            historyRecall(0);
+            historyRecall(-1, history.contentCommandHistoryEntry);
             commandInput.value += ` -grow '${title}'`;
             // commandInput.dispatchEvent(new Event('input'));
             // commandForm.dispatchEvent(new Event('submit'));
@@ -880,7 +896,7 @@ function showContextMenu(menuData) {
         {
           label: `✂️\tPrune`, // －✂
           click: (menuItem, win, ev) => {
-            historyRecall(0);
+            historyRecall(-1, history.contentCommandHistoryEntry);
             // commandInput.value += ` -prune '${title}'`;
             commandPrune.value = (commandPrune.value + ` ${title}`).trim();
             // commandInput.dispatchEvent(new Event('input'));
@@ -891,7 +907,7 @@ function showContextMenu(menuData) {
         {
           label: `❌\tExclude`, // ｘ❌
           click: (menuItem, win, ev) => {
-            historyRecall(0);
+            historyRecall(-1, history.contentCommandHistoryEntry);
             // commandInput.value += ` -x '${title}'`;
             commandExclude.value = (commandExclude.value + ` ${title}`).trim();
             // commandInput.dispatchEvent(new Event('input'));
@@ -913,6 +929,24 @@ function showContextMenu(menuData) {
       });
     }
   }
+
+  menuItems.push(
+    {
+      type: 'separator',
+    },
+    {
+      label: `M\tShow in Modules`,
+      click: (menuItem, win, ev) => {
+        showIn(ev, "-mod");
+      },
+    },
+    {
+      label: `F\tShow in Files`,
+      click: (menuItem, win, ev) => {
+        showIn(ev);
+      },
+    },
+  );
 
   menuItems.push(
     {
@@ -1199,7 +1233,7 @@ function closeCurrentTab() {
     }
     closeTab(current.id);
     focusAppropriateElement();
-    onTabChange();
+    // onTabChange();
   }
 
 document.addEventListener('keydown', ev => {
@@ -1237,10 +1271,10 @@ const commandOptions = [
   [0, null,  "commandTimeout",      val => `--timeout ${val}`],
   [0, "lr",  "commandDir",          val => `--dir ${val}`],
   [0, "svg", "commandOutputFormat", val => val === "text" ? "-text -nohlends" : val === "text-indent" ? "--indents -nohlends" : `-${val}`],
-  [1, "",    "commandFrom",         val => val.trim().split(/\s+/).map(x => `-f '${x}'`).join(" ")],
-  [1, "",    "commandTo",           val => val.trim().split(/\s+/).map(x => `-t '${x}'`).join(" ")],
-  [0, "",    "commandExclude",      val => val.trim().split(/\s+/).map(x => `-x '${x}'`).join(" ")],
-  [0, "",    "commandPrune",        val => val.trim().split(/\s+/).map(x => `-prune '${x}'`).join(" ")],
+  [1, "",    "commandFrom",         val => val.trim().split(/\s+/).map(x => `-f ${x}`).join(" ")],
+  [1, "",    "commandTo",           val => val.trim().split(/\s+/).map(x => `-t ${x}`).join(" ")],
+  [0, "",    "commandExclude",      val => val.trim().split(/\s+/).map(x => `-x ${x}`).join(" ")],
+  [0, "",    "commandPrune",        val => val.trim().split(/\s+/).map(x => `-prune ${x}`).join(" ")],
 ];
 
 function generateCommandPreset(ev) {
@@ -1380,3 +1414,18 @@ function showCommandDialog(command) {
     dialog.remove();
   });
 }
+
+function showIn(ev = null, args = "") {
+  historyRecall(-1, history.contentCommandHistoryEntry);
+  let cmd = getCombinedCommand();
+  if (!cmd || cmd.includes("-g ")) return;
+  console.log(`Wrapping command: ${cmd}`);
+  historyRecall(-1);
+  commandInput.value = `-g ${args} *\$(${cmd} -list)`;
+  console.log(`Wrapped command: ${commandInput.value}`);
+  let openInNewTab_ = openInNewTab;
+  openInNewTab = true;
+  handleCommandSubmit(ev);
+  openInNewTab = openInNewTab_; // Restore original value
+}
+
