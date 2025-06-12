@@ -1233,9 +1233,9 @@ const commandOptions = [
   [0, null,  "command-timeout",       val => `--timeout ${val}`],
   [0, "lr",  "command-dir",           val => `--dir ${val}`],
   [0, "svg", "command-output-format", val => val === "text" ? "-text -nohlends" : val === "text-indent" ? "--indents -nohlends" : `-${val}`],
-  [1, "",    "command-from",          val => `-f '${val}'`],
-  [1, "",    "command-to",            val => `-t '${val}'`],
-  [0, "",    "command-exclude",       val => `-x '${val}'`],
+  [1, "",    "command-from",          val => val.trim().split(/\s+/).map(x => `-f '${x}'`).join(" ")],
+  [1, "",    "command-to",            val => val.trim().split(/\s+/).map(x => `-t '${x}'`).join(" ")],
+  [0, "",    "command-exclude",       val => val.trim().split(/\s+/).map(x => `-x '${x}'`).join(" ")],
 ];
 
 function generateCommandPreset(ev) {
