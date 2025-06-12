@@ -68,6 +68,10 @@ ipcRenderer.on('process-argv', (event, data) => {
   if (process_argv.length > 0) console.log("Command line arguments:", process_argv);
 });
 
+function formEnable(state) {
+  // [...commandForm.querySelectorAll("input,select,textarea,button:not(#interrupt-btn):not(#terminate-btn)")].forEach(e => e.disabled=!state);
+  [...commandForm.querySelectorAll("button:not(#interrupt-btn):not(#terminate-btn)")].forEach(e => e.disabled=!state);
+}
 
 // Initialize the terminal
 function initializeTerminal() {
@@ -127,7 +131,7 @@ function initializeTerminal() {
   generateCommandPreset();
 
   // Disable the submit button button initially
-  // submitButton.disabled = true;
+  // formEnable(false); // submitButton.disabled = true;
 
   // Focus the input field
   commandInput.value = defaultCommand;
@@ -157,7 +161,7 @@ function onServerReady(message) {
     type: 'system',
     data: `[Server ready: ${message}]\n`
   });
-  submitButton.disabled = false;
+  formEnable(true);
   if (process_argv.length > 0) {
     switchToTabByNumber(1);
     commandInput.value = process_argv.shift();
@@ -176,7 +180,7 @@ function onServerBusy(message) {
     type: 'system',
     data: `[Server busy: ${message}]\n`
   });
-  submitButton.disabled = true;
+  formEnable(false);
 }
 
 function onServerCommandStart(message) {
@@ -634,7 +638,7 @@ function handleSignal(signalType) {
 
     // Format friendly names for UI messages
     const signalName = signalType === 'SIGINT' ? 'Interrupt' : 'Terminate';
-    const shortcutHint = signalType === 'SIGINT' ? '(Ctrl+C)' : '(Ctrl+T)';
+    const shortcutHint = signalType === 'SIGINT' ? '(Ctrl+C)' : '(Ctrl+Shift+R)';
 
     // Visual feedback
     updateStatus(`${signalName} signal sent ${shortcutHint}`, 'success');
@@ -673,8 +677,8 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
-  // Ctrl+T to terminate process (SIGTERM)
-  if (event.key === 't' && (event.ctrlKey || event.metaKey)) {
+  // Ctrl+Shift+R to terminate process (SIGTERM)
+  if (event.key === 'r' && (event.ctrlKey || event.metaKey) && event.shiftKey) {
     event.preventDefault();
     handleSignal('SIGTERM');
     return;

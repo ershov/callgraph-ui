@@ -84,6 +84,7 @@ function initCallgraphProcess() {
     // Handle stdout data
     callgraphProcess.stdout.on('data', (data) => {
       if (!server_started && data.includes("\n<<<<<<<<<< Server start")) {
+        console.log('Callgraph server started.');
         server_started = true;
       }
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -109,6 +110,11 @@ function initCallgraphProcess() {
       console.log(`Callgraph process exited with code ${code} and signal ${signal}`);
       if (!server_started) {
         // app.quit(); // Don't quit to show error message in the UI.
+        console.log('NOT restarting callgraph process since the server crashed during startup.');
+        mainWindow.webContents.send('callgraph-output', {
+          type: 'system',
+          data: `\n[System: NOT restarting callgraph process since the server crashed during startup.]\n`
+        });
         return;
       }
 
