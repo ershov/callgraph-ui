@@ -10,7 +10,15 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "chmod +x ./bin/callgraph-ui",
     "package": "electron-builder --dir",
-    "dist": "electron-builder"
+    "package-mac": "electron-builder --dir --mac",
+    "package-win": "electron-builder --dir --win",
+    "package-linux": "electron-builder --dir --linux",
+    "package-all": "electron-builder --dir -mlw",
+    "dist": "electron-builder",
+    "dist-mac": "electron-builder --mac --arm64 --x64 --universal",
+    "dist-win": "electron-builder --win --arm64 --x64 --universal",
+    "dist-linux": "electron-builder --linux --arm64 --x64 --universal",
+    "dist-all": "electron-builder -mlw --arm64 --x64 --universal"
   },
   "keywords": [
     "callgraph",
@@ -19,8 +27,12 @@
     "electron",
     "ui"
   ],
-  "author": "Yury Ershov",
+  "author": {
+    "name": "Yury Ershov",
+    "email": "yuriy.ershov@gmail.com"
+  },
   "license": "GPL",
+  "homepage": ".",
   "description": "An interactive UI for visualizing call graph for WiredTiger",
   "devDependencies": {
     "electron": "^36.2.0",
@@ -30,14 +42,39 @@
     "appId": "com.callgraph.ui",
     "productName": "Callgraph UI",
     "mac": {
+      "icon": "assets/icon.png",
       "category": "public.app-category.developer-tools",
-      "icon": "assets/icon.png"
-    },
-    "win": {
-      "icon": "assets/icon.png"
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "target": [
+          "dmg",
+          "zip"
+      ]
     },
     "linux": {
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "category": "Utility",
+      "target": [
+        "AppImage",
+        "deb",
+        "tar.gz",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "assets/icon.png",
+      "publisherName": "MongoDB / WiredTiger",
+      "target": [
+          "default",
+          "nsis",
+          "zip"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true
     }
   },
   "dependencies": {
