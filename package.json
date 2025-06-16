@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "main.js",
   "bin": {
+    "callgraph": "./bin/callgraph",
     "callgraph-ui": "./bin/callgraph-ui"
   },
   "scripts": {
