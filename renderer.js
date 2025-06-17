@@ -582,6 +582,7 @@ function onTabChange(ev) {
     historyRecall(-1);
   } else {
     historyRecall(0);
+    history.historyIndex = -1;
     history.commandHistory.shift();
   }
 }
