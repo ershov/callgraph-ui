@@ -538,6 +538,96 @@ function createNewExploreTab() {
   showConsole();
 }
 
+// Cache tab selection for better performance
+const getTabElements = () => ({
+  all: Array.from(document.querySelectorAll('.tab-radio')),
+  current: document.querySelector('.tab-radio:checked'),
+  terminal: document.getElementById('tab-0')
+});
+
+// Focus the appropriate element based on the active tab
+function focusAppropriateElement() {
+  const { current } = getTabElements();
+  if (current.id === 'tab-0' || isConsoleVisible()) {
+    // Focus command input when in terminal tab
+    commandInput.focus();
+  } else {
+    // document.getElementById("tab-controls")?.focus();
+
+    // // Focus the captured output div for scrolling
+    // const panel = document.getElementById(`panel-${current.id}`);
+    // if (panel) {
+    //     const outputDiv = panel.querySelector('.captured-output');
+    //     if (outputDiv) {
+    //         outputDiv.tabIndex = -1; // Make it focusable
+    //         outputDiv.focus();
+    //     }
+    // }
+  }
+}
+
+document.getElementById('tab-0').addEventListener("change", onTabChange);
+
+function onTabChange(ev) {
+  const { all, current } = getTabElements();
+  const panel = document.getElementById(`panel-${current.id}`);
+  // console.log(prevTabIdx, currentIndex, all.length, current.id, panel);
+  if (current.id === tabLru[0]) return;
+  updateTabLru(current.id, !!panel);
+  if (!panel) return;
+  historyPush();
+  history.commandHistory[0]["~"] = true;
+  history = panel.history;
+  if (!history.commandHistory.length || !history.commandHistory[0]["~"]) {
+    historyRecall(-1);
+  } else {
+    historyRecall(0);
+    history.commandHistory.shift();
+  }
+}
+
+// Tab navigation functions
+function switchToNextTab() {
+  const { all, current } = getTabElements();
+  if (all.length <= 1) return; // Don't cycle if only terminal tab exists
+
+  const currentIndex = all.indexOf(current);
+  const nextIndex = (currentIndex + 1) % all.length;
+  all[nextIndex].checked = true;
+  focusAppropriateElement();
+  onTabChange({target: all[nextIndex]});
+}
+
+function switchToPreviousTab() {
+  const { all, current } = getTabElements();
+  if (all.length <= 1) return; // Don't cycle if only terminal tab exists
+
+  const currentIndex = all.indexOf(current);
+  const prevIndex = (currentIndex - 1 + all.length) % all.length;
+  all[prevIndex].checked = true;
+  focusAppropriateElement();
+  onTabChange({target: all[prevIndex]});
+}
+
+function switchToTabByNumber(number) {
+  const { all } = getTabElements();
+  if (number <= all.length) {
+    all[number - 1].checked = true;
+    focusAppropriateElement();
+    onTabChange({target: all[number - 1]});
+  }
+}
+
+function closeCurrentTab() {
+  const { current, terminal } = getTabElements();
+  if (current === terminal) {
+    return;
+  }
+  closeTab(current.id);
+  focusAppropriateElement();
+  // onTabChange();
+}
+
 ////////////
 
 function historyPush() {
@@ -1145,96 +1235,6 @@ document.addEventListener('keydown', (event) => {
 });
 
 ////
-
-// Cache tab selection for better performance
-const getTabElements = () => ({
-    all: Array.from(document.querySelectorAll('.tab-radio')),
-    current: document.querySelector('.tab-radio:checked'),
-    terminal: document.getElementById('tab-0')
-});
-
-// Focus the appropriate element based on the active tab
-function focusAppropriateElement() {
-    const { current } = getTabElements();
-    if (current.id === 'tab-0' || isConsoleVisible()) {
-        // Focus command input when in terminal tab
-        commandInput.focus();
-    } else {
-        // document.getElementById("tab-controls")?.focus();
-
-        // // Focus the captured output div for scrolling
-        // const panel = document.getElementById(`panel-${current.id}`);
-        // if (panel) {
-        //     const outputDiv = panel.querySelector('.captured-output');
-        //     if (outputDiv) {
-        //         outputDiv.tabIndex = -1; // Make it focusable
-        //         outputDiv.focus();
-        //     }
-        // }
-    }
-}
-
-document.getElementById('tab-0').addEventListener("change", onTabChange);
-
-function onTabChange(ev) {
-  const { all, current } = getTabElements();
-  const panel = document.getElementById(`panel-${current.id}`);
-  // console.log(prevTabIdx, currentIndex, all.length, current.id, panel);
-  if (current.id === tabLru[0]) return;
-  updateTabLru(current.id, !!panel);
-  if (!panel) return;
-  historyPush();
-  history.commandHistory[0]["~"] = true;
-  history = panel.history;
-  if (!history.commandHistory.length || !history.commandHistory[0]["~"]) {
-    historyRecall(-1);
-  } else {
-    historyRecall(0);
-    history.commandHistory.shift();
-  }
-}
-
-// Tab navigation functions
-function switchToNextTab() {
-    const { all, current } = getTabElements();
-    if (all.length <= 1) return; // Don't cycle if only terminal tab exists
-
-    const currentIndex = all.indexOf(current);
-    const nextIndex = (currentIndex + 1) % all.length;
-    all[nextIndex].checked = true;
-    focusAppropriateElement();
-    onTabChange({target: all[nextIndex]});
-}
-
-function switchToPreviousTab() {
-    const { all, current } = getTabElements();
-    if (all.length <= 1) return; // Don't cycle if only terminal tab exists
-
-    const currentIndex = all.indexOf(current);
-    const prevIndex = (currentIndex - 1 + all.length) % all.length;
-    all[prevIndex].checked = true;
-    focusAppropriateElement();
-    onTabChange({target: all[prevIndex]});
-}
-
-function switchToTabByNumber(number) {
-    const { all } = getTabElements();
-    if (number <= all.length) {
-        all[number - 1].checked = true;
-        focusAppropriateElement();
-        onTabChange({target: all[number - 1]});
-      }
-}
-
-function closeCurrentTab() {
-    const { current, terminal } = getTabElements();
-    if (current === terminal) {
-        return;
-    }
-    closeTab(current.id);
-    focusAppropriateElement();
-    // onTabChange();
-  }
 
 document.addEventListener('keydown', ev => {
   if (ev.key === "`" /* && (ev.ctrlKey || ev.metaKey) */ ) {
