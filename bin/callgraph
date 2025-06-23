@@ -47,10 +47,10 @@ no warnings 'uninitialized';    # allow 0+undef
 use Getopt::Long;
 use IO::File;
 
-our $VERSION="1.6.1";
+our $VERSION="1.6.2";
 
 our (@codeInit, @codeParse, @codeAfterParse, @codeFilterNode, @codeFilterEdge, @codeEnd);
-our ($outputFilter, $OUT) = (undef, *STDOUT);
+our ($outputFilter, $OUT, $outPid, $exiting) = (undef, *STDOUT, undef, 0);
 our $server = undef;
 sub server_msg(@) { print "\n<<<<<<<<<< @_ >>>>>>>>>>\n"; flush STDOUT; }
 sub close_out() {
@@ -67,6 +67,14 @@ sub EXIT(@) {
   }
   server_msg "Server end: $$:", ($_[0] // 0) if $server;
   close_out();
+  ++$exiting; # 0: not exiting; 1: exiting - just close output; 2: kill subprocess; 3: kill -9
+  if ($exiting == 2) {
+    kill 'TERM', $outPid if $outPid;
+    wait;
+  } elsif ($exiting >= 3) {
+    kill 'KILL', $outPid if $outPid;
+    wait;
+  }
   exit @_;
 }
 sub fatal(@) { say STDERR @_; EXIT 1; }
@@ -84,7 +92,9 @@ sub open_out() {
         '
       };
     }
-    $OUT = IO::File->new("|$outputFilter") or fatal "Can't open output filter program: $outputFilter";
+    # $OUT = IO::File->new("|$outputFilter") or fatal "Can't open output filter program: $outputFilter";
+    $OUT = undef;
+    $outPid = open $OUT, "|-", $outputFilter or fatal "Can't open output filter program: $outputFilter";
   }
 }
 sub readfile($) { local $/=undef; IO::File->new(shift, "r")->getline(); }
@@ -250,7 +260,7 @@ Usage:
 
   * Graphviz options:
 --dir                     - Graph direction: LR, RL, TB, BT.
---minmaxrank              - Group top and bottom rank nodes at the begginning and end.
+--minmax                  - Group top and bottom rank nodes at the begginning and end.
 
   * Misc options:
 --home               - Set source home directory (default: current).
@@ -1440,12 +1450,15 @@ open_out();
 
 our $interrupt = 0;
 sub handle_ctrl_c() {
-  $SIG{INT} = sub {
-    $interrupt = 1;
-    $SIG{INT} = undef;
+  $SIG{TERM} = $SIG{INT} = sub {
+    # $SIG{INT} = undef;
     say STDERR "** Interrupt **";
+    if ($interrupt++ > 1) {
+      EXIT;
+    }
   };
 }
+handle_ctrl_c() if $outputFilter;
 
 if ($mode == 4) {
   my @funcs = sort grep {/$addNodes/} keys %func2ret;
@@ -1645,7 +1658,7 @@ if ($mode == 2) {
   }
 
   is_graphical_output() and print $OUT (<< "_E");
-strict digraph calls {
+strict digraph {
 rankdir=$rankdir;
 splines=$splines;
 _E
@@ -1772,7 +1785,7 @@ if ($mode == 1) {
 
   # Print graph
   is_graphical_output() and print $OUT (<< "_E");
-strict digraph calls {
+strict digraph {
 labelloc=t;
 rankdir=$rankdir;
 splines=$splines;
