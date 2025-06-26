@@ -632,6 +632,7 @@ our (%modules, %moduleDirs, %moduleAliasesFile, %moduleAliasesSrc);
 %modules = (
   block => {},
   block_cache => {fileAliases=>["block_chunkcache"], sourceAliases=>["blkcache", "bm"]},
+  block_disagg => {},
   bloom => {},
   btree => {fileAliases=>["btmem", "btree_cmp", "dhandle", "modify", "ref", "serial"]},
   call_log => {},
@@ -639,6 +640,7 @@ our (%modules, %moduleDirs, %moduleAliasesFile, %moduleAliasesSrc);
   config => {},
   conn => {fileAliases=>["connection"], sourceAliases=>["connection"]},
   cursor => {sourceAliases=>["cur", "btcur", "curbackup"]},
+  disagg => {},
   evict => {fileAliases=>["cache"]},
   history => {sourceAliases=>["hs"]},
   log => {},
