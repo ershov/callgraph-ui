@@ -5,8 +5,68 @@ const path = require('path');
 const fs = require('fs');
 const electron = require('electron');
 
+// Function to detect if we're running from a packaged app or source tree
+function getAppDirectory() {
+  const scriptDir = __dirname;
+
+  // First, try the source tree structure (bin/callgraph-ui -> ..)
+  const sourceAppDir = path.resolve(scriptDir, '..');
+  const sourceMainJs = path.join(sourceAppDir, 'main.js');
+  const sourcePackageJson = path.join(sourceAppDir, 'package.json');
+
+  if (fs.existsSync(sourceMainJs) && fs.existsSync(sourcePackageJson)) {
+    return sourceAppDir;
+  }
+
+  // For packaged apps, we need to find the resources directory
+  // Typical packaged structure:
+  // - macOS: App.app/Contents/Resources/app.asar.unpacked/ or App.app/Contents/Resources/app/
+  // - Windows: resources/app.asar.unpacked/ or resources/app/
+  // - Linux: resources/app.asar.unpacked/ or resources/app/
+
+  let currentDir = scriptDir;
+  let attempts = 0;
+  const maxAttempts = 10; // Prevent infinite loops
+
+  while (attempts < maxAttempts) {
+    // Look for main.js in current directory
+    const mainJsPath = path.join(currentDir, 'main.js');
+    const packageJsonPath = path.join(currentDir, 'package.json');
+
+    if (fs.existsSync(mainJsPath) && fs.existsSync(packageJsonPath)) {
+      return currentDir;
+    }
+
+    // Look for app or app.asar.unpacked directories
+    const appDir = path.join(currentDir, 'app');
+    const appAsarUnpackedDir = path.join(currentDir, 'app.asar.unpacked');
+
+    for (const candidateDir of [appDir, appAsarUnpackedDir]) {
+      if (fs.existsSync(candidateDir)) {
+        const candidateMainJs = path.join(candidateDir, 'main.js');
+        const candidatePackageJson = path.join(candidateDir, 'package.json');
+
+        if (fs.existsSync(candidateMainJs) && fs.existsSync(candidatePackageJson)) {
+          return candidateDir;
+        }
+      }
+    }
+
+    // Move up one directory level
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      break; // Reached root directory
+    }
+    currentDir = parentDir;
+    attempts++;
+  }
+
+  // Fallback: try the original source tree assumption
+  return sourceAppDir;
+}
+
 // Get the path to the app directory
-const appDir = path.resolve(__dirname, '..');
+const appDir = getAppDirectory();
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -21,10 +81,24 @@ if (args.includes('--help') || args.includes('-h')) {
 
   Options:
     --home {DIR}    Set the source home directory
+    --debug         Show debug information about app paths
     --help, -h      Show this help message
     --version, -v   Show version information
   `);
   process.exit(0);
+}
+
+if (args.includes('--debug')) {
+  console.log(`Debug information:`);
+  console.log(`  Script location: ${__filename}`);
+  console.log(`  Script directory: ${__dirname}`);
+  console.log(`  Resolved app directory: ${appDir}`);
+  console.log(`  Main.js path: ${path.join(appDir, 'main.js')}`);
+  console.log(`  Main.js exists: ${fs.existsSync(path.join(appDir, 'main.js'))}`);
+
+  // Remove --debug from args before passing to Electron
+  const debugIndex = args.indexOf('--debug');
+  args.splice(debugIndex, 1);
 }
 
 if (args.includes('--version') || args.includes('-v')) {
@@ -56,6 +130,15 @@ if (args.includes('--home')) {
 const mainJsPath = path.join(appDir, 'main.js');
 if (!fs.existsSync(mainJsPath)) {
   console.error(`Error: Could not find main application file at ${mainJsPath}`);
+  console.error(`Script directory: ${__dirname}`);
+  console.error(`Resolved app directory: ${appDir}`);
+  console.error('Available files in app directory:');
+  try {
+    const files = fs.readdirSync(appDir);
+    console.error(files.join(', '));
+  } catch (err) {
+    console.error('Could not read app directory contents:', err.message);
+  }
   process.exit(1);
 }
 

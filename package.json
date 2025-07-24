@@ -48,9 +48,7 @@
       "index.html",
       "styles.css",
       "package.json",
-      "assets/**/*",
-      "bin/callgraph",
-      "bin/callgraph-ui"
+      "assets/**/*"
     ],
     "extraResources": [
       {

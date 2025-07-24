@@ -27,7 +27,45 @@ function killCallgraphProcess() {
   }
 }
 
-// Removed redundant IPC handlers that are now handled directly in renderer via @electron/remote
+// Helper function to find the callgraph binary path
+function getCallgraphPath() {
+  const fs = require('fs');
+
+  // In development (source tree), callgraph is in bin/callgraph relative to main.js
+  const developmentPath = path.join(__dirname, 'bin', 'callgraph');
+  if (fs.existsSync(developmentPath)) {
+    return developmentPath;
+  }
+
+  // In packaged app, callgraph should be in extraResources
+  if (app.isPackaged) {
+    console.log('Running in packaged mode, searching for callgraph binary...');
+    // Try different possible locations for packaged apps
+    const resourcesPath = process.resourcesPath;
+    const possiblePaths = [
+      path.join(resourcesPath, 'bin', 'callgraph'),
+      path.join(resourcesPath, 'callgraph'),
+      path.join(resourcesPath, '..', 'bin', 'callgraph'), // Some packaging structures
+      path.join(app.getAppPath(), 'bin', 'callgraph'),
+      path.join(app.getAppPath(), '..', 'bin', 'callgraph')
+    ];
+
+    console.log('Checking paths:', possiblePaths);
+
+    for (const possiblePath of possiblePaths) {
+      if (fs.existsSync(possiblePath)) {
+        console.log(`Found callgraph binary at: ${possiblePath}`);
+        return possiblePath;
+      }
+    }
+
+    console.warn('Could not find callgraph binary in expected packaged locations');
+  }
+
+  // Fallback to just 'callgraph' and hope it's in PATH
+  console.log('Falling back to PATH lookup for callgraph binary');
+  return 'callgraph';
+}// Removed redundant IPC handlers that are now handled directly in renderer via @electron/remote
 
 // Create the main window
 function createWindow() {
@@ -69,8 +107,12 @@ let server_started = false;
 // Initialize callgraph process
 function initCallgraphProcess() {
   try {
+    // Get the path to the callgraph binary
+    const callgraphPath = getCallgraphPath();
+    console.log(`Using callgraph binary at: ${callgraphPath}`);
+
     // Spawn a persistent callgraph session
-    callgraphProcess = spawn('callgraph',
+    callgraphProcess = spawn(callgraphPath,
       [
         '-server',
         '-hlends',
