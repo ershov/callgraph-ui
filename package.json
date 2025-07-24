@@ -17,9 +17,9 @@
     "package-all": "electron-builder --dir -mlw",
     "dist": "electron-builder",
     "dist-mac": "electron-builder --mac --arm64 --x64 --universal",
-    "dist-win": "electron-builder --win --arm64 --x64 --universal",
-    "dist-linux": "electron-builder --linux --arm64 --x64 --universal",
-    "dist-all": "electron-builder -mlw --arm64 --x64 --universal"
+    "dist-win": "electron-builder --win --arm64 --x64",
+    "dist-linux": "electron-builder --linux --arm64 --x64",
+    "dist-all": "electron-builder -mlw --arm64 --x64"
   },
   "keywords": [
     "callgraph",
@@ -42,6 +42,26 @@
   "build": {
     "appId": "com.callgraph.ui",
     "productName": "Callgraph UI",
+    "files": [
+      "main.js",
+      "renderer.js",
+      "index.html",
+      "styles.css",
+      "package.json",
+      "assets/**/*",
+      "bin/callgraph",
+      "bin/callgraph-ui"
+    ],
+    "extraResources": [
+      {
+        "from": "bin/callgraph",
+        "to": "bin/callgraph"
+      },
+      {
+        "from": "bin/callgraph-ui",
+        "to": "bin/callgraph-ui"
+      }
+    ],
     "mac": {
       "icon": "assets/icon.png",
       "category": "public.app-category.developer-tools",
