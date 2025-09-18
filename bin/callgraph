@@ -47,7 +47,7 @@ no warnings 'uninitialized';    # allow 0+undef
 use Getopt::Long;
 use IO::File;
 
-our $VERSION="1.6.2";
+our $VERSION="1.7";
 
 our (@codeInit, @codeParse, @codeAfterParse, @codeFilterNode, @codeFilterEdge, @codeEnd);
 our ($outputFilter, $OUT, $outPid, $exiting) = (undef, *STDOUT, undef, 0);
@@ -173,7 +173,7 @@ sub read_all() {
       cd "\$ROOT" || die "Can't chdir to \$ROOT"
     fi
     test -d src || die "Can't find src directory in \$PWD"
-    for f in \`find src $build -name '*.[ch]' | LC_ALL=C sort\`; do
+    for f in \`find src ext $build -name '*.[ch]' | LC_ALL=C sort\`; do
       echo
       echo "#line" \$f
       cat \$f
@@ -242,6 +242,7 @@ Usage:
 --depth                   - Depth first (also leads to alphabetically sored output).
 --continue                - Continue the search when a target is hit (for more matches).
 --refs                    - Try to make sense of assigned function pointers.
+--strict                  - Only follow direct calls, do not try to follow function pointers.
 --timeout                 - Timeout for graph search operations in seconds.
 
   * Output format:
@@ -341,7 +342,7 @@ our $ret_arg1 = "WT_ERR|WT_ERR_ERROR_OK|WT_ERR_NOTFOUND_OK|WT_RET|WT_RET_TRACK|W
 our $ret_arg2 = "WT_ERR_MSG|WT_ERR_TEST|WT_RET_TEST|WT_ERR_PANIC|WT_RET_VRFY_RETVAL|WT_RET_MSG|WT_PREFETCH_ASSERT|API_END_RET|__wt_set_return|__blkcache_read_corrupt|__wt_err_func|__wt_panic|__wt_panic_func|__wt_panic_func";
 our $ret_arg3 = "__config_err";
 our $ret_arg4 = "WT_RET_ASSERT|WT_RET_PANIC_ASSERT";
-our ($pathFrom, $pathTo, $exclude, $prune, $grow, $printBackwards, $maxDepthToScan, $searchPath, $printLen, $rankdir, $minmaxrank, $fmt, $mode, $walkByBreadth, $continue, $refs, $grep, $indentStr, $hlends);
+our ($pathFrom, $pathTo, $exclude, $prune, $grow, $printBackwards, $maxDepthToScan, $searchPath, $printLen, $rankdir, $minmaxrank, $fmt, $mode, $walkByBreadth, $continue, $refs, $strict, $grep, $indentStr, $hlends);
 $refs = $printLen = $walkByBreadth = 1;
 $searchPath = 2; $mode = 2;
 our ($timeout, $use_modules);
@@ -453,6 +454,7 @@ sub parseArgs() {
   "depth" => sub { $walkByBreadth = 0; },
   "continue!" => \$continue,
   "refs!" => \$refs,
+  "strict!" => \$strict,
   "timeout=i" => \$timeout,
 
   "dir=s" => sub {
@@ -738,10 +740,10 @@ if ($refs) {
 s{\/\*([^*]|\*[^/])*\*/}{}msg;
 
 # Join long lines
-s{\\\n\s*}{ }msg;
-s{\(\n\s*}{(}msg;
-s{([,?:|!~%^])\n\s*}{$1 }msg;
-s{(\&\&)\n\s*}{$1 }msg;
+s{[ \t]*+\\\n\s*+}{ }msg;
+s{\([ \t]*+\n\s*+}{(}msg;
+s{([,?:|!~%^])[ \t]*+\n\s*+}{$1 }msg;
+s{(\&\&)[ \t]*+\n\s*}{$1 }msg;
 
 # Collect all function names from func definitions and count them
 our %fn;
@@ -800,6 +802,7 @@ if ($refs) {
   }
   $re_all = "\\b(".(join "|", map {re_escape($_)} sort ((keys %fn_all), (keys %fn_refs))).")\\b" if %fn_refs;
 }
+our $re_all_match = $strict ? qr{$re_all\(} : qr{$re_all\s*+([(),:;])};
 
 $func = "";
 sub parse_retvals {
@@ -837,7 +840,11 @@ sub parse_retvals {
     push @{$func2ret{$func}}, $1;
   }
 }
+
 for (split /\n/) {
+  # skip struct initializers
+  # if (/_STATIC_INIT\s*\([\w\s\,]++\);\s*+$/ || /^[\w\s\[\]]++\s*+=\s*+\{[\w\s\,\[\]\{\}=]*?\}[;,]\s*+$/s) { say; next; }
+  if (/_STATIC_INIT/ || /^[\w\s\[\]]++\s*+=\s*+\{[\w\s\,\[\]\{\}=]*?\}[;,]\s*+$/s) { say; next; }
   if (/^#define ([_]*wt_\w++)\(/i) {
     local $func = $1;  # make a local one
     $funcs{$func} = 1;
@@ -886,7 +893,8 @@ for (split /\n/) {
   if (!$func) { next; }
   # Search for function calls
   # while (m{$re_all\(}g) {
-  while (m{$re_all\s*+([(),:;])}g) {
+  # while (m{$re_all\s*+([(),:;])}g) {
+  while (m{$re_all_match}g) {
     if ($2 eq ';' && substr($_, $-[0]-3, 3) eq ' = ') { # skip function pointer assignment
       # my $i = pos();
       # my $ii = $i;
