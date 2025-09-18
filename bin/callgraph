@@ -843,8 +843,8 @@ sub parse_retvals {
 
 for (split /\n/) {
   # skip struct initializers
-  # if (/_STATIC_INIT\s*\([\w\s\,]++\);\s*+$/ || /^[\w\s\[\]]++\s*+=\s*+\{[\w\s\,\[\]\{\}=]*?\}[;,]\s*+$/s) { say; next; }
-  if (/_STATIC_INIT/ || /^[\w\s\[\]]++\s*+=\s*+\{[\w\s\,\[\]\{\}=]*?\}[;,]\s*+$/s) { say; next; }
+  # if (/_STATIC_INIT\s*\([\w\s\,]++\);\s*+$/ || /^[\w\s\[\]]++\s*+=\s*+\{[\w\s\,\[\]\{\}=]*?\}[;,]\s*+$/s) { next; }
+  if (/_STATIC_INIT/ || /^[\w\s\[\]]++\s*+=\s*+\{[\w\s\,\[\]\{\}=]*?\}[;,]\s*+$/s) { next; }
   if (/^#define ([_]*wt_\w++)\(/i) {
     local $func = $1;  # make a local one
     $funcs{$func} = 1;
